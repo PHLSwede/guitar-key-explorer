@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0d0d0d" id="themeColorMeta">
+<meta name="theme-color" content="#1F1F1F" id="themeColorMeta">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Guitar Explorer">
@@ -17,43 +17,43 @@
 <style>
   /* ── STUDIO DARK (default) ── */
   :root {
-    /* ── STUDIO DARK (designer palette) ── */
+    /* Studio Dark — Designer Palette */
     --bg: #1F1F1F;
     --surface: #2B2B2B;
     --surface2: #333330;
-    --surface3: #3d3d3a;
+    --surface3: #3D3D3A;
     --text: #F4F1E8;
     --muted: #A8A8A8;
-    --border: #3d3d3a;
+    --border: #3D3D3A;
+    --cream: #F4F1E8;
 
-    /* Accent */
+    /* Accent — Instrument tones */
     --gold: #C8952A;
     --gold-light: #E7B45A;
     --amber: #E7B45A;
     --brass: #B57A2D;
-    --cream: #F4F1E8;
 
     /* Functional states */
     --green: #6FA873;
-    --green-light: #8dc490;
+    --green-light: #8DC490;
     --warning: #E1B63A;
     --red: #E25757;
 
     /* Fretboard */
-    --string: #4a4035;
-    --fret: #5a5048;
+    --string: #4A4035;
+    --fret: #5A5048;
     --dot: #C8952A;
     --inlay: #353028;
-    --neck-bg: #1a1810;
+    --neck-bg: #181510;
 
     /* Degree colours — music theory mapped to palette */
     --I:   #C8952A;
-    --II:  #7a9cc9;
-    --III: #8dc490;
-    --IV:  #c97a9a;
+    --II:  #7A9CC9;
+    --III: #8DC490;
+    --IV:  #C97A9A;
     --V:   #E7B45A;
-    --VI:  #7ac9c0;
-    --VII: #a07ac9;
+    --VI:  #7AC9C0;
+    --VII: #A07AC9;
 
     /* Theme meta */
     --font-display: 'Playfair Display', serif;
@@ -70,7 +70,7 @@
 
   /* ── OPEN STAGE theme ── */
   [data-theme="open"] {
-    /* ── OPEN STAGE (designer palette) ── */
+    /* Open Stage — Designer Palette */
     --bg: #F5F2EA;
     --surface: #FFFFFF;
     --surface2: #EFE7D6;
@@ -78,35 +78,35 @@
     --text: #2B2B2B;
     --muted: #6B6B6B;
     --border: #DDD5C4;
+    --cream: #2B2B2B;
 
-    /* Accent */
-    --gold: #2B2B2B;
-    --gold-light: #1F1F1F;
+    /* Accent — Instrument tones */
+    --gold: #C8952A;
+    --gold-light: #B57A2D;
     --amber: #B57A2D;
     --brass: #B57A2D;
-    --cream: #2B2B2B;
 
     /* Functional states */
     --green: #5E8C61;
-    --green-light: #7aaa7d;
+    --green-light: #7AAA7D;
     --warning: #D6A52C;
     --red: #D64545;
 
     /* Fretboard */
-    --string: #ddd5c4;
-    --fret: #c8bfae;
-    --dot: #C8952A;
-    --inlay: #ede8de;
-    --neck-bg: #f0ece2;
+    --string: #DDD5C4;
+    --fret: #C8BFAE;
+    --dot: #B57A2D;
+    --inlay: #EDE8DE;
+    --neck-bg: #F0ECE2;
 
-    /* Degree colours */
+    /* Degree colours — music theory mapped to palette */
     --I:   #B57A2D;
-    --II:  #3a5a78;
+    --II:  #3A5A78;
     --III: #5E8C61;
-    --IV:  #8c4a6e;
+    --IV:  #8C4A6E;
     --V:   #C8952A;
-    --VI:  #3a8c8c;
-    --VII: #7a4a9e;
+    --VI:  #3A8C8C;
+    --VII: #7A4A9E;
 
     /* Theme meta */
     --font-display: 'Playfair Display', serif;
@@ -1147,7 +1147,7 @@ function chordDiagramSVG(chordData, size=110) {
 
   // nut or position marker
   if (sf === 1) {
-    svg += `<rect x="${padL}" y="${padT-4}" width="${gridW}" height="5" rx="2" fill="#c9a84c"/>`;
+    svg += `<rect x="${padL}" y="${padT-4}" width="${gridW}" height="5" rx="2" fill="#C8952A"/>`;
   } else {
     svg += `<text x="${padL-4}" y="${padT+fsp*0.6}" text-anchor="end" fill="#888" font-size="${size*0.11}" font-family="Space Mono,monospace">${sf}fr</text>`;
   }
@@ -1155,12 +1155,12 @@ function chordDiagramSVG(chordData, size=110) {
   // Fret lines
   for (let f = 0; f <= nFrets; f++) {
     const y = padT + f * fsp;
-    svg += `<line x1="${padL}" y1="${y}" x2="${padL+gridW}" y2="${y}" stroke="#3a3028" stroke-width="1"/>`;
+    svg += `<line x1="${padL}" y1="${y}" x2="${padL+gridW}" y2="${y}" stroke="#4A4035" stroke-width="1"/>`;
   }
   // String lines
   for (let s = 0; s < nStrings; s++) {
     const x = padL + s * spc;
-    svg += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT+gridH}" stroke="#4a4040" stroke-width="1.2"/>`;
+    svg += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT+gridH}" stroke="#5A5048" stroke-width="1.2"/>`;
   }
 
   // Barre
@@ -1169,7 +1169,7 @@ function chordDiagramSVG(chordData, size=110) {
     const y = padT + (fret - sf + 0.5) * fsp;
     const x1 = padL + from * spc;
     const x2 = padL + to * spc;
-    svg += `<rect x="${x1}" y="${y-dotR}" width="${x2-x1}" height="${dotR*2}" rx="${dotR}" fill="#c9a84c" opacity="0.9"/>`;
+    svg += `<rect x="${x1}" y="${y-dotR}" width="${x2-x1}" height="${dotR*2}" rx="${dotR}" fill="#C8952A" opacity="0.9"/>`;
   }
 
   // Dots + mutes/opens
@@ -1184,9 +1184,9 @@ function chordDiagramSVG(chordData, size=110) {
       svg += `<circle cx="${x}" cy="${padT-8}" r="${dotR*0.75}" fill="none" stroke="#888" stroke-width="1.2"/>`;
     } else {
       const fy = padT + (f - sf + 0.5) * fsp;
-      svg += `<circle cx="${x}" cy="${fy}" r="${dotR}" fill="#c9a84c"/>`;
+      svg += `<circle cx="${x}" cy="${fy}" r="${dotR}" fill="#C8952A"/>`;
       if (fingers && fingers[s]) {
-        svg += `<text x="${x}" y="${fy+size*0.045}" text-anchor="middle" fill="#0d0d0d" font-size="${size*0.1}" font-family="Space Mono" font-weight="bold">${fingers[s]}</text>`;
+        svg += `<text x="${x}" y="${fy+size*0.045}" text-anchor="middle" fill="#1F1F1F" font-size="${size*0.1}" font-family="Space Mono" font-weight="bold">${fingers[s]}</text>`;
       }
     }
   }
@@ -1274,18 +1274,18 @@ const VOICINGS = {
   // Minor shapes
   'A_min': {
     root: { frets:[-1,0,2,2,1,0], fingers:[0,0,2,3,1,0] },
-    inv1: { frets:[-1,0,2,2,1,4], fingers:[0,0,2,3,1,4], label:'1st inv (C bass)' },
-    inv2: { frets:[-1,0,2,2,1,0], fingers:[0,0,2,3,1,0], label:'Root' },
+    inv1: { frets:[-1,0,2,2,1,4], fingers:[0,0,2,3,1,4], startFret:1, label:'1st inv (C bass)' },
+    inv2: { frets:[-1,0,2,2,1,0], fingers:[0,0,2,3,1,0], startFret:1, label:'Root' },
   },
   'E_min': {
     root: { frets:[0,2,2,0,0,0], fingers:[0,2,3,0,0,0] },
-    inv1: { frets:[0,2,2,0,0,3], fingers:[0,2,3,0,0,4], label:'1st inv (G bass)' },
-    inv2: { frets:[0,2,2,0,4,0], fingers:[0,2,3,0,4,0], label:'2nd inv (B bass)' },
+    inv1: { frets:[0,2,2,0,0,3], fingers:[0,2,3,0,0,4], startFret:1, label:'1st inv (G bass)' },
+    inv2: { frets:[0,2,2,0,4,0], fingers:[0,2,3,0,4,0], startFret:1, label:'2nd inv (B bass)' },
   },
   'D_min': {
     root: { frets:[-1,-1,0,2,3,1], fingers:[0,0,0,2,3,1] },
-    inv1: { frets:[-1,-1,0,2,3,4], fingers:[0,0,0,1,2,3], label:'1st inv' },
-    inv2: { frets:[-1,-1,0,2,3,1], fingers:[0,0,0,2,3,1], label:'Root' },
+    inv1: { frets:[-1,-1,0,2,3,4], fingers:[0,0,0,1,2,3], startFret:1, label:'1st inv' },
+    inv2: { frets:[-1,-1,0,2,3,1], fingers:[0,0,0,2,3,1], startFret:1, label:'Root' },
   },
   'B_min': {
     root: { frets:[-1,2,4,4,3,2], fingers:[0,1,3,4,2,1], barre:{fret:2,from:1,to:5}, startFret:2 },
@@ -1950,23 +1950,23 @@ function buildScaleNeck(scale) {
   let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
 
   // Background
-  svg += `<rect width="${W}" height="${H}" fill="#161616" rx="8"/>`;
+  svg += `<rect width="${W}" height="${H}" fill="#2B2B2B" rx="8"/>`;
 
   // Nut
-  svg += `<rect x="${padL}" y="${padT}" width="5" height="${6*cellH}" rx="2" fill="#c9a84c"/>`;
+  svg += `<rect x="${padL}" y="${padT}" width="5" height="${6*cellH}" rx="2" fill="#C8952A"/>`;
 
   // Fret lines
   for (let f = 0; f <= frets; f++) {
     const x = padL + f * cellW;
     const isNut = f === 0;
-    if (!isNut) svg += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT+6*cellH}" stroke="#3a3028" stroke-width="${f===12?2:1}"/>`;
+    if (!isNut) svg += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT+6*cellH}" stroke="#4A4035" stroke-width="${f===12?2:1}"/>`;
   }
 
   // String lines
   for (let s = 0; s < 6; s++) {
     const y = padT + s * cellH + cellH/2;
     const thickness = 1 + (5-s) * 0.4;
-    svg += `<line x1="${padL}" y1="${y}" x2="${padL+frets*cellW}" y2="${y}" stroke="#4a4040" stroke-width="${thickness}"/>`;
+    svg += `<line x1="${padL}" y1="${y}" x2="${padL+frets*cellW}" y2="${y}" stroke="#5A5048" stroke-width="${thickness}"/>`;
   }
 
   // Inlay dots
@@ -2004,8 +2004,8 @@ function buildScaleNeck(scale) {
         const x = f === 0 ? padL - cellW*0.4 : padL + f * cellW - cellW/2;
         if (f === 0 && x < 5) continue;
         const isRoot = note === rootNote;
-        svg += `<circle cx="${x}" cy="${y}" r="${dotR}" fill="${isRoot?'#c9a84c':'#2a4a2a'}" stroke="${isRoot?'#e8c97a':'#3a7a3a'}" stroke-width="1.5"/>`;
-        svg += `<text x="${x}" y="${y+4}" text-anchor="middle" fill="${isRoot?'#0d0d0d':'#8ccc8c'}" font-size="8" font-family="Space Mono" font-weight="bold">${displayNote(note)}</text>`;
+        svg += `<circle cx="${x}" cy="${y}" r="${dotR}" fill="${isRoot?'#C8952A':'#2a4a2a'}" stroke="${isRoot?'#E7B45A':'#3a7a3a'}" stroke-width="1.5"/>`;
+        svg += `<text x="${x}" y="${y+4}" text-anchor="middle" fill="${isRoot?'#1F1F1F':'#8ccc8c'}" font-size="8" font-family="Space Mono" font-weight="bold">${displayNote(note)}</text>`;
       }
     }
   }
@@ -2223,16 +2223,16 @@ function buildPentaNeck(pentaNotes, rootNote) {
   const inlays = [3,5,7,9,12];
 
   let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
-  svg += `<rect width="${W}" height="${H}" fill="#161616" rx="8"/>`;
-  svg += `<rect x="${padL}" y="${padT}" width="5" height="${6*cellH}" rx="2" fill="#c9a84c"/>`;
+  svg += `<rect width="${W}" height="${H}" fill="#2B2B2B" rx="8"/>`;
+  svg += `<rect x="${padL}" y="${padT}" width="5" height="${6*cellH}" rx="2" fill="#C8952A"/>`;
 
   for (let f = 1; f <= frets; f++) {
     const x = padL + f * cellW;
-    svg += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT+6*cellH}" stroke="#3a3028" stroke-width="${f===12?2:1}"/>`;
+    svg += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT+6*cellH}" stroke="#4A4035" stroke-width="${f===12?2:1}"/>`;
   }
   for (let s = 0; s < 6; s++) {
     const y = padT + s * cellH + cellH/2;
-    svg += `<line x1="${padL}" y1="${y}" x2="${padL+frets*cellW}" y2="${y}" stroke="#4a4040" stroke-width="${1+(5-s)*0.4}"/>`;
+    svg += `<line x1="${padL}" y1="${y}" x2="${padL+frets*cellW}" y2="${y}" stroke="#5A5048" stroke-width="${1+(5-s)*0.4}"/>`;
   }
   inlays.forEach(f => {
     if (f===12) {
@@ -2259,7 +2259,7 @@ function buildPentaNeck(pentaNotes, rootNote) {
         const x = f===0 ? padL-cellW*0.4 : padL+f*cellW-cellW/2;
         if (f===0 && x<5) continue;
         const isRoot = note===rootNote;
-        svg += `<circle cx="${x}" cy="${y}" r="${dotR}" fill="${isRoot?'#e07b39':'#1a3a0a'}" stroke="${isRoot?'#f0a060':'#4a8a1a'}" stroke-width="1.5"/>`;
+        svg += `<circle cx="${x}" cy="${y}" r="${dotR}" fill="${isRoot?'#E7B45A':'#1a3a0a'}" stroke="${isRoot?'#f0a060':'#4a8a1a'}" stroke-width="1.5"/>`;
         svg += `<text x="${x}" y="${y+4}" text-anchor="middle" fill="${isRoot?'#fff':'#a8d878'}" font-size="8" font-family="Space Mono" font-weight="bold">${displayNote(note)}</text>`;
       }
     }
@@ -2333,20 +2333,20 @@ function buildBoxSVG(pentaSet, rootNote, startFret, openNotes) {
 
   // Nut or position marker
   if (startFret === 0 || startFret === 1) {
-    svg += `<rect x="${padL}" y="${padT}" width="4" height="${strings*cellH}" rx="1.5" fill="#c9a84c"/>`;
+    svg += `<rect x="${padL}" y="${padT}" width="4" height="${strings*cellH}" rx="1.5" fill="#C8952A"/>`;
   } else {
-    svg += `<text x="${padL-4}" y="${padT+cellH*0.7}" text-anchor="end" fill="#666" font-size="8" font-family="Space Mono">${startFret}fr</text>`;
+    svg += `<text x="${padL-4}" y="${padT+cellH*0.7}" text-anchor="end" fill="#A8A8A8" font-size="8" font-family="Space Mono">${startFret}fr</text>`;
   }
 
   // Fret lines
   for (let f=0; f<=frets; f++) {
     const x = padL+f*cellW;
-    svg += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT+strings*cellH}" stroke="#3a3028" stroke-width="${f===0?0:1}"/>`;
+    svg += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT+strings*cellH}" stroke="#4A4035" stroke-width="${f===0?0:1}"/>`;
   }
   // String lines
   for (let s=0; s<strings; s++) {
     const y = padT+s*cellH+cellH/2;
-    svg += `<line x1="${padL}" y1="${y}" x2="${padL+frets*cellW}" y2="${y}" stroke="#4a4040" stroke-width="${1+(5-s)*0.3}"/>`;
+    svg += `<line x1="${padL}" y1="${y}" x2="${padL+frets*cellW}" y2="${y}" stroke="#5A5048" stroke-width="${1+(5-s)*0.3}"/>`;
   }
   // String labels
   const sLabels = ['E','A','D','G','B','e'];
@@ -2368,7 +2368,7 @@ function buildBoxSVG(pentaSet, rootNote, startFret, openNotes) {
           ? padL + cellW * 0.5   // open string: between nut and fret 1
           : padL + fretPos * cellW - cellW * 0.5; // middle of fret space
         const isRoot = note===rootNote;
-        svg += `<circle cx="${drawX}" cy="${y}" r="${dotR}" fill="${isRoot?'#e07b39':'#1a3a0a'}" stroke="${isRoot?'#f0a060':'#4a8a1a'}" stroke-width="1.2"/>`;
+        svg += `<circle cx="${drawX}" cy="${y}" r="${dotR}" fill="${isRoot?'#E7B45A':'#1a3a0a'}" stroke="${isRoot?'#f0a060':'#4a8a1a'}" stroke-width="1.2"/>`;
         svg += `<text x="${drawX}" y="${y+3}" text-anchor="middle" fill="${isRoot?'#fff':'#a8d878'}" font-size="6.5" font-family="Space Mono" font-weight="bold">${displayNote(note)}</text>`;
       }
     }
@@ -2394,18 +2394,18 @@ function buildLeadNeck(pentaNotes, rootNote, chordNotes) {
   const inlays = [3,5,7,9,12];
 
   let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
-  svg += `<rect width="${W}" height="${H}" fill="#161616" rx="8"/>`;
+  svg += `<rect width="${W}" height="${H}" fill="#2B2B2B" rx="8"/>`;
   // Nut
-  svg += `<rect x="${padL}" y="${padT}" width="4" height="${6*cellH}" rx="2" fill="#c9a84c"/>`;
+  svg += `<rect x="${padL}" y="${padT}" width="4" height="${6*cellH}" rx="2" fill="#C8952A"/>`;
   // Frets
   for (let f=1; f<=frets; f++) {
     const x = padL + f*cellW;
-    svg += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT+6*cellH}" stroke="#3a3028" stroke-width="${f===12?2:1}"/>`;
+    svg += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT+6*cellH}" stroke="#4A4035" stroke-width="${f===12?2:1}"/>`;
   }
   // Strings
   for (let s=0; s<6; s++) {
     const y = padT + s*cellH + cellH/2;
-    svg += `<line x1="${padL}" y1="${y}" x2="${padL+frets*cellW}" y2="${y}" stroke="#4a4040" stroke-width="${1+(5-s)*0.35}"/>`;
+    svg += `<line x1="${padL}" y1="${y}" x2="${padL+frets*cellW}" y2="${y}" stroke="#5A5048" stroke-width="${1+(5-s)*0.35}"/>`;
   }
   // Inlays
   inlays.forEach(f => {
@@ -2438,7 +2438,7 @@ function buildLeadNeck(pentaNotes, rootNote, chordNotes) {
       const isRoot = note===rootNote;
       const isChordTone = chordSet.has(note);
       // Fill: amber for root, green for penta, darker for non-chord-tone
-      const fill = isRoot ? '#e07b39' : isChordTone ? '#2a5a0a' : '#1a3a0a';
+      const fill = isRoot ? '#E7B45A' : isChordTone ? '#2a5a0a' : '#1a3a0a';
       const stroke = isRoot ? '#f0a060' : isChordTone ? '#6aaa2a' : '#4a8a1a';
       svg += `<circle cx="${x}" cy="${y}" r="${dotR}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`;
       // Ring around chord tones that aren't root
@@ -2641,6 +2641,7 @@ function toggleAnalyser() {
 function initAnalyser() {
   // Build root note buttons
   const rootDiv = document.getElementById('chordPickerRoot');
+  if (!rootDiv) return;
   PICKER_ROOTS.forEach((r, i) => {
     const btn = document.createElement('button');
     btn.className = 'picker-root-btn';
@@ -3007,23 +3008,24 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-buildKeyGrid();
-initAnalyser();
+document.addEventListener('DOMContentLoaded', function() {
+  buildKeyGrid();
+  initAnalyser();
 
-// Restore saved theme
-(function() {
-  const saved = localStorage.getItem('gxTheme');
-  if (saved === 'open') {
-    document.documentElement.setAttribute('data-theme', 'open');
-    const lbl = document.getElementById('themeLabel');
-    if (lbl) lbl.textContent = 'Open Stage';
-  }
-})();
+  // Restore saved theme
+  (function() {
+    const saved = localStorage.getItem('gxTheme');
+    if (saved === 'open') {
+      document.documentElement.setAttribute('data-theme', 'open');
+      const lbl = document.getElementById('themeLabel');
+      if (lbl) lbl.textContent = 'Open Stage';
+    }
+  })();
 
-render();
+  render();
 
-// Render chord detail placeholder on load
-document.getElementById('chordDetail').innerHTML = '<div class="info-box" style="margin-top:1.5rem"><strong>Click any chord card</strong> above to see its voicing, fingering, and inversions on the fretboard.</div>';
+  document.getElementById('chordDetail').innerHTML = '<div class="info-box" style="margin-top:1.5rem"><strong>Click any chord card</strong> above to see its voicing, fingering, and inversions on the fretboard.</div>';
+});
 
 // Expose functions to global scope for Safari onclick compatibility
 window.switchTab = switchTab;
