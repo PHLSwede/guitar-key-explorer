@@ -17,74 +17,107 @@
 <style>
   /* ── STUDIO DARK (default) ── */
   :root {
-    --bg: #0d0d0d;
-    --surface: #161616;
-    --surface2: #1e1e1e;
-    --surface3: #262626;
-    --gold: #c9a84c;
-    --gold-light: #e8c97a;
-    --amber: #e07b39;
-    --cream: #f5ead8;
-    --muted: #666;
-    --text: #e8e0d0;
-    --string: #3a3028;
-    --fret: #4a4040;
-    --dot: #c9a84c;
-    --inlay: #2a2520;
-    --I: #c9a84c;
-    --II: #7a9cc9;
-    --III: #9ec97a;
-    --IV: #c97a9a;
-    --V: #c97a4c;
-    --VI: #7ac9c0;
+    /* ── STUDIO DARK (designer palette) ── */
+    --bg: #1F1F1F;
+    --surface: #2B2B2B;
+    --surface2: #333330;
+    --surface3: #3d3d3a;
+    --text: #F4F1E8;
+    --muted: #A8A8A8;
+    --border: #3d3d3a;
+
+    /* Accent */
+    --gold: #C8952A;
+    --gold-light: #E7B45A;
+    --amber: #E7B45A;
+    --brass: #B57A2D;
+    --cream: #F4F1E8;
+
+    /* Functional states */
+    --green: #6FA873;
+    --green-light: #8dc490;
+    --warning: #E1B63A;
+    --red: #E25757;
+
+    /* Fretboard */
+    --string: #4a4035;
+    --fret: #5a5048;
+    --dot: #C8952A;
+    --inlay: #353028;
+    --neck-bg: #1a1810;
+
+    /* Degree colours — music theory mapped to palette */
+    --I:   #C8952A;
+    --II:  #7a9cc9;
+    --III: #8dc490;
+    --IV:  #c97a9a;
+    --V:   #E7B45A;
+    --VI:  #7ac9c0;
     --VII: #a07ac9;
-    /* theme meta */
+
+    /* Theme meta */
     --font-display: 'Playfair Display', serif;
     --font-mono: 'Space Mono', monospace;
     --font-body: 'Space Mono', monospace;
-    --header-grad: linear-gradient(135deg, var(--gold-light), var(--gold), var(--amber));
-    --header-border: rgba(201,168,76,0.15);
-    --tab-active-color: var(--gold);
-    --tab-active-border: var(--gold);
-    --btn-active-bg: var(--gold);
-    --btn-active-color: #0d0d0d;
-    --neck-bg: #111;
-    --chord-card-hover-bg: var(--surface3);
+    --header-grad: linear-gradient(135deg, #E7B45A, #C8952A, #B57A2D);
+    --header-border: rgba(200,149,42,0.15);
+    --tab-active-color: #C8952A;
+    --tab-active-border: #C8952A;
+    --btn-active-bg: #C8952A;
+    --btn-active-color: #1F1F1F;
+    --chord-card-hover-bg: var(--surface2);
   }
 
   /* ── OPEN STAGE theme ── */
   [data-theme="open"] {
-    --bg: #faf6f0;
-    --surface: #ffffff;
-    --surface2: #f3ede4;
-    --surface3: #e8dfd3;
-    --gold: #1e1a14;
-    --gold-light: #2e2820;
-    --amber: #c4461a;
-    --cream: #1e1a14;
-    --muted: #8a7e6e;
-    --text: #2e2820;
-    --string: #ddd8d0;
-    --fret: #ccc8bf;
-    --dot: #c8962a;
-    --inlay: #ede9e2;
-    --I: #c8962a;
-    --II: #3a5a78;
-    --III: #3d7a5a;
-    --IV: #8c4a6e;
-    --V: #c4461a;
-    --VI: #3a8c8c;
+    /* ── OPEN STAGE (designer palette) ── */
+    --bg: #F5F2EA;
+    --surface: #FFFFFF;
+    --surface2: #EFE7D6;
+    --surface3: #E3D9C6;
+    --text: #2B2B2B;
+    --muted: #6B6B6B;
+    --border: #DDD5C4;
+
+    /* Accent */
+    --gold: #2B2B2B;
+    --gold-light: #1F1F1F;
+    --amber: #B57A2D;
+    --brass: #B57A2D;
+    --cream: #2B2B2B;
+
+    /* Functional states */
+    --green: #5E8C61;
+    --green-light: #7aaa7d;
+    --warning: #D6A52C;
+    --red: #D64545;
+
+    /* Fretboard */
+    --string: #ddd5c4;
+    --fret: #c8bfae;
+    --dot: #C8952A;
+    --inlay: #ede8de;
+    --neck-bg: #f0ece2;
+
+    /* Degree colours */
+    --I:   #B57A2D;
+    --II:  #3a5a78;
+    --III: #5E8C61;
+    --IV:  #8c4a6e;
+    --V:   #C8952A;
+    --VI:  #3a8c8c;
     --VII: #7a4a9e;
-    --font-display: 'Fraunces', serif;
-    --font-mono: 'Fira Code', monospace;
-    --font-body: 'Fraunces', serif;
-    --header-grad: linear-gradient(135deg, #c4461a, #c8962a);
-    --header-border: rgba(196,70,26,0.2);
-    --tab-active-color: #c4461a;
-    --tab-active-border: #c4461a;
-    --btn-active-bg: #1e1a14;
-    --btn-active-color: #faf6f0;
-    --neck-bg: #f2efe9;
+
+    /* Theme meta */
+    --font-display: 'Playfair Display', serif;
+    --font-mono: 'Space Mono', monospace;
+    --font-body: 'Space Mono', monospace;
+    --header-grad: linear-gradient(135deg, #C8952A, #B57A2D);
+    --header-border: rgba(181,122,45,0.2);
+    --tab-active-color: #B57A2D;
+    --tab-active-border: #B57A2D;
+    --btn-active-bg: #2B2B2B;
+    --btn-active-color: #F5F2EA;
     --chord-card-hover-bg: var(--surface2);
   }
 
@@ -3012,5 +3045,6 @@ window.showSong = showSong;
 window.deleteSong = deleteSong;
 window.openInExplorer = openInExplorer;
 window.closeSongModal = closeSongModal;
+// Built: 2026-03-15 13:13:36
 </script>
 </body>
