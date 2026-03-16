@@ -1087,8 +1087,8 @@ const MINOR_INTERVALS = [0,2,3,5,7,8,10]; // W H W W H W W
 
 const MAJOR_QUALITIES = ['maj','min','min','maj','maj','min','dim'];
 const MINOR_QUALITIES = ['min','dim','maj','min','min','maj','maj'];
-const MAJOR_ROMAN    = ['I','ii','iii','IV','V','vi','viideg'];
-const MINOR_ROMAN    = ['i','iideg','III','iv','v','VI','VII'];
+const MAJOR_ROMAN    = ['I','ii','iii','IV','V','vi','vii°'];
+const MINOR_ROMAN    = ['i','ii°','III','iv','v','VI','VII'];
 const MAJOR_DEGREE_NAMES = ['Tonic','Supertonic','Mediant','Subdominant','Dominant','Submediant','Leading Tone'];
 const MINOR_DEGREE_NAMES = ['Tonic','Supertonic','Mediant','Subdominant','Dominant','Submediant','Subtonic'];
 const DEGREE_NUMS = ['1','2','3','4','5','6','7'];
@@ -1532,7 +1532,7 @@ function render() {
     const qLabel = q === 'maj' ? 'Major' : q === 'min' ? 'Minor' : 'Diminished';
     card.innerHTML = `
       <div class="chord-degree">${romans[i]}  -  ${DEGREE_NUMS[i]}</div>
-      <div class="chord-name">${dn}${q==='min'?'m':q==='dim'?'deg':''}</div>
+      <div class="chord-name">${dn}${q==='min'?'m':q==='dim'?'°':''}</div>
       <div class="chord-quality">${qLabel}</div>
       <div class="chord-notes">${chordNotes.map(displayNote).join(' - ')}</div>
     `;
@@ -1881,7 +1881,7 @@ function getChordInfo(idx, quality, roman, noteName) {
     3: `<strong>${roman}  -  Subdominant</strong>: Strong movement away from home. Classic I -> IV -> V -> I is the foundation of countless songs.`,
     4: `<strong>${roman}  -  Dominant</strong>: The tension chord. The V chord <em>wants</em> to resolve to I  -  this is the strongest resolution in Western music.`,
     5: `<strong>${roman}  -  Submediant</strong>: The relative ${quality === 'min' ? 'major' : 'minor'}. Very common in pop/rock. The I -> V -> vi -> IV progression is everywhere.`,
-    6: `<strong>${roman}  -  Leading Tone</strong>: The most tense chord. In major keys, the viideg is diminished. Usually leads strongly back to I.`,
+    6: `<strong>${roman}  -  Leading Tone</strong>: The most tense chord. In major keys, the vii° is diminished. Usually leads strongly back to I.`,
   };
   return tips[idx] || `<strong>${roman}</strong>: Degree ${idx+1} of the scale.`;
 }
@@ -2058,7 +2058,7 @@ function renderTheory(scale, qualities, romans, degNames) {
     html += `<tr style="border-bottom:1px solid var(--surface3)">
       <td style="padding:0.4rem 0.6rem;color:${colors[i]};font-weight:700">${DEGREE_NUMS[i]}</td>
       <td style="padding:0.4rem 0.6rem;color:${colors[i]}">${romans[i]}</td>
-      <td style="padding:0.4rem 0.6rem;color:var(--cream);font-family:'Playfair Display',serif">${dn2}${q==='min'?'m':q==='dim'?'deg':''}</td>
+      <td style="padding:0.4rem 0.6rem;color:var(--cream);font-family:'Playfair Display',serif">${dn2}${q==='min'?'m':q==='dim'?'°':''}</td>
       <td style="padding:0.4rem 0.6rem;color:var(--muted)">${qLabel}</td>
       <td style="padding:0.4rem 0.6rem;color:var(--muted)">${degNames[i]}</td>
       <td style="padding:0.4rem 0.6rem;color:var(--muted)">${chordNotes.map(displayNote).join(' - ')}</td>
@@ -2075,7 +2075,7 @@ function renderTheory(scale, qualities, romans, degNames) {
     const chordNames = prog.chords.map(i => {
       const n = displayNote(scale[i]);
       const q = qualities[i];
-      return n+(q==='min'?'m':q==='dim'?'deg':'');
+      return n+(q==='min'?'m':q==='dim'?'°':'');
     }).join(' -> ');
     html += `<div class="info-box">
       <strong>${prog.name}</strong> &nbsp; - &nbsp; ${prog.desc}<br>
@@ -2089,8 +2089,8 @@ function renderTheory(scale, qualities, romans, degNames) {
     <div class="info-box">
       <strong>Tonal Function Summary</strong><br>
       <strong style="color:var(--gold)">Tonic function</strong> (stable/home): ${currentMode==='major'?'I, iii, vi':'i, III, VI'}<br>
-      <strong style="color:var(--amber)">Subdominant function</strong> (moving away): ${currentMode==='major'?'IV, ii':'iv, iideg'}<br>
-      <strong style="color:#c97a4c">Dominant function</strong> (tension/return): ${currentMode==='major'?'V, viideg':'v, VII'}
+      <strong style="color:var(--amber)">Subdominant function</strong> (moving away): ${currentMode==='major'?'IV, ii':'iv, ii°'}<br>
+      <strong style="color:#c97a4c">Dominant function</strong> (tension/return): ${currentMode==='major'?'V, vii°':'v, VII'}
     </div>`;
 
   document.getElementById('theoryContent').innerHTML = html;
@@ -2572,7 +2572,7 @@ function renderLead(scale, qualities, romans) {
     const q = qualities[i];
     const dn = displayNote(note);
     const fn = getTonalFunction(i);
-    const chordName = `${dn}${q==='min'?'m':q==='dim'?'deg':''}`;
+    const chordName = `${dn}${q==='min'?'m':q==='dim'?'°':''}`;
 
     html += `<div class="lead-card">
       <div class="lead-card-header">
@@ -2600,7 +2600,7 @@ const PICKER_DISPLAY  = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
 const PICKER_QUALS    = [
   { label:'maj', suffix:'' },
   { label:'min', suffix:'m' },
-  { label:'dim', suffix:'deg' },
+  { label:'dim', suffix:'°' },
   { label:'maj7', suffix:'maj7' },
   { label:'dom7', suffix:'7' },
   { label:'m7',   suffix:'m7' },
