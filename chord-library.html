@@ -1013,7 +1013,7 @@ _safariStubs.forEach(function(fn) { window[fn] = function() { console.log('stub:
 </div>
 
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────────────────
+// -- CONFIG --------------------------------------------------------------------
 const WORKER_URL = 'https://guitar-proxy.tight-meadow-3e46.workers.dev/';
 const EXPLORER_URL = 'guitar-key-explorer.html';
 const STORAGE_KEY = 'chordLibrary_v1';
@@ -1025,7 +1025,7 @@ const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 const SUPABASE_URL = 'https://wmxxomiuzdhmvysefrjg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oMyje3R_YGvTETd1qtLTCg_KC314Teu';
 
-// ── SUPABASE CLIENT ───────────────────────────────────────────────────────────
+// -- SUPABASE CLIENT -----------------------------------------------------------
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
     persistSession: true,
@@ -1039,7 +1039,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 let currentUser = null;
 let authSkipped = false;
 
-// ── STATE ─────────────────────────────────────────────────────────────────────
+// -- STATE ---------------------------------------------------------------------
 let library = [];
 let sets = [];
 let progress = {};
@@ -1056,7 +1056,7 @@ let newSetEmoji = '🎵';
 let newSetType = 'custom';
 let _pendingSongForSet = null;
 
-// ── AUTH ──────────────────────────────────────────────────────────────────────
+// -- AUTH ----------------------------------------------------------------------
 function showLoginModal() { /* inline auth - no modal */ }
 function hideLoginModal() { /* inline auth - no modal */ }
 
@@ -1066,7 +1066,7 @@ function skipLogin() {
 }
 
 
-// ── GOOGLE OAUTH ──────────────────────────────────────────────────────────────
+// -- GOOGLE OAUTH --------------------------------------------------------------
 async function signInWithGoogle() {
   try {
     const { data, error } = await sb.auth.signInWithOAuth({
@@ -1082,7 +1082,7 @@ async function signInWithGoogle() {
     if (err) { err.textContent = 'Google sign-in failed: ' + e.message; err.style.display = 'block'; }
   }
 }
-// ── END GOOGLE OAUTH ──────────────────────────────────────────────────────────
+// -- END GOOGLE OAUTH ----------------------------------------------------------
 
 async function sendMagicLink() {
   const emailEl = document.getElementById('loginEmail');
@@ -1093,7 +1093,7 @@ async function sendMagicLink() {
     return;
   }
   const btn = document.getElementById('loginBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
   const errEl = document.getElementById('loginError');
   if (errEl) errEl.style.display = 'none';
 
@@ -1105,18 +1105,18 @@ async function sendMagicLink() {
     if (error) throw error;
     const ok = document.getElementById('loginSuccess');
     if (ok) ok.style.display = 'block';
-    if (btn) btn.textContent = '✓ Sent';
+    if (btn) btn.textContent = 'v Sent';
     if (emailEl) emailEl.style.display = 'none';
   } catch(e) {
     const err = document.getElementById('loginError');
     if (err) { err.textContent = e.message || 'Could not send. Try again.'; err.style.display = 'block'; }
-    if (btn) { btn.disabled = false; btn.textContent = 'Send Link →'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Send Link ->'; }
   }
 }
 
 function showLoginError(msg) {
   const el = document.getElementById('loginError');
-  el.textContent = '⚠ ' + msg;
+  el.textContent = '! ' + msg;
   el.style.display = 'block';
 }
 
@@ -1143,9 +1143,9 @@ function updateAuthBar(user) {
       <input type="email" id="loginEmail" placeholder="email for magic link"
         style="background:var(--surface2);border:1px solid var(--surface3);border-radius:6px;padding:0.3rem 0.65rem;color:var(--text);font-family:'Space Mono',monospace;font-size:0.62rem;outline:none;width:160px"
         onkeydown="if(event.key==='Enter')sendMagicLink()">
-      <button class="btn btn-outline" id="loginBtn" onclick="sendMagicLink()" style="font-size:0.62rem;padding:0.3rem 0.75rem">→</button>
+      <button class="btn btn-outline" id="loginBtn" onclick="sendMagicLink()" style="font-size:0.62rem;padding:0.3rem 0.75rem">-></button>
       <div id="loginError" style="color:var(--red);font-size:0.62rem;display:none"></div>
-      <div id="loginSuccess" style="color:var(--green);font-size:0.62rem;display:none">✓ Check your inbox</div>`;
+      <div id="loginSuccess" style="color:var(--green);font-size:0.62rem;display:none">v Check your inbox</div>`;
   }
 }
 
@@ -1162,7 +1162,7 @@ async function signOut() {
   showLoginModal();
 }
 
-// ── SUPABASE DATA SYNC ────────────────────────────────────────────────────────
+// -- SUPABASE DATA SYNC --------------------------------------------------------
 async function syncFromSupabase() {
   if (!currentUser) return;
 
@@ -1224,7 +1224,7 @@ async function syncFromSupabase() {
   }
 }
 
-// ── SUPABASE WRITE OPERATIONS ─────────────────────────────────────────────────
+// -- SUPABASE WRITE OPERATIONS -------------------------------------------------
 async function dbAddSong(song) {
   if (!currentUser) { saveLibrary(); return; }
   const { data, error } = await sb.from('songs').insert({
@@ -1316,7 +1316,7 @@ async function dbSavePreferences() {
   });
 }
 
-// ── LOCAL FALLBACK ────────────────────────────────────────────────────────────
+// -- LOCAL FALLBACK ------------------------------------------------------------
 function loadLocalData() {
   try { library = JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); } catch(e) { library=[]; }
   try { sets = JSON.parse(localStorage.getItem(SETS_KEY)||'[]'); } catch(e) { sets=[]; }
@@ -1326,7 +1326,7 @@ function loadLocalData() {
 
 
 const PROGRESS_STATES = ['unstarted','practiced','ready','mastered'];
-const PROGRESS_LABELS = { unstarted:'—', practiced:'Practicing', ready:'Ready', mastered:'Mastered' };
+const PROGRESS_LABELS = { unstarted:'-', practiced:'Practicing', ready:'Ready', mastered:'Mastered' };
 const PROGRESS_NEXT = { unstarted:'practiced', practiced:'ready', ready:'mastered', mastered:'unstarted' };
 const TYPE_ICONS = { setlist:'🎤', practice:'🎯', curriculum:'📚', custom:'🎵' };
 const TYPE_COLORS = { setlist:'type-setlist', practice:'type-practice', curriculum:'type-curriculum', custom:'type-custom' };
@@ -1340,8 +1340,8 @@ const FLAT_DISPLAY = { 'C#':'Db','D#':'Eb','F#':'Gb','G#':'Ab','A#':'Bb' };
 
 function dispKey(k) { return FLAT_DISPLAY[k] || k; }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
-// ── PERSISTENCE (local cache) ─────────────────────────────────────────────────
+// -- INIT ----------------------------------------------------------------------
+// -- PERSISTENCE (local cache) -------------------------------------------------
 function loadLibrary() { try { library = JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); } catch(e) { library=[]; } }
 function saveLibrary() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(library)); } catch(e) {} }
 function loadSets() { try { sets = JSON.parse(localStorage.getItem(SETS_KEY)||'[]'); } catch(e) { sets=[]; } }
@@ -1349,7 +1349,7 @@ function saveSets() { try { localStorage.setItem(SETS_KEY, JSON.stringify(sets))
 function loadProgress() { try { progress = JSON.parse(localStorage.getItem(PROGRESS_KEY)||'{}'); } catch(e) { progress={}; } }
 function saveProgress() { try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress)); } catch(e) {} }
 
-// ── PLAYLIST CRUD ─────────────────────────────────────────────────────────────
+// -- PLAYLIST CRUD -------------------------------------------------------------
 function showSetCreateModal() {
   newSetEmoji = '🎵'; newSetType = 'custom';
   document.getElementById('setNameInput').value = '';
@@ -1408,7 +1408,69 @@ async function renameSet(id) {
   }
 }
 
-// ── SIDEBAR RENDER ─────────────────────────────────────────────────────────────
+// -- SIDEBAR RENDER -------------------------------------------------------------
+function renderLibrary() { filterLibrary(); }
+
+function filterLibrary() {
+  const search = (document.getElementById('searchBox')?.value || '').toLowerCase();
+  const keyF = document.getElementById('keyFilter')?.value || '';
+  const diffF = document.getElementById('diffFilter')?.value || '';
+  const genreF = document.getElementById('genreFilter')?.value || '';
+
+  let songs = currentSetId
+    ? (sets.find(p => p.id === currentSetId)?.songIds || []).map(id => library.find(s => s.id === id)).filter(Boolean)
+    : [...library];
+
+  if (search) songs = songs.filter(s =>
+    (s.title||'').toLowerCase().includes(search) ||
+    (s.artist||'').toLowerCase().includes(search) ||
+    (s.key||'').toLowerCase().includes(search)
+  );
+  if (keyF) songs = songs.filter(s => s.key === keyF);
+  if (diffF) songs = songs.filter(s => s.difficulty === diffF);
+  if (genreF) songs = songs.filter(s => s.genre === genreF);
+
+  filteredLibrary = songs;
+  renderFiltered();
+}
+
+function renderFiltered() {
+  const container = document.getElementById('libraryContainer');
+  if (!container) return;
+
+  if (!filteredLibrary.length) {
+    container.innerHTML = `<div style="text-align:center;padding:3rem 1rem;color:var(--muted)">
+      <div style="font-size:2rem;margin-bottom:0.75rem">🎵</div>
+      <div style="font-size:0.85rem;margin-bottom:0.5rem">${library.length ? 'No songs match your filter' : 'No songs yet'}</div>
+      <div style="font-size:0.72rem">${library.length ? 'Try clearing filters' : 'Click + Add File or 🔗 Add Tab URL to get started'}</div>
+    </div>`;
+    return;
+  }
+
+  if (currentView === 'list') {
+    const header = `<div class="list-header" style="display:grid;grid-template-columns:60px 1fr 1fr auto auto auto auto;gap:0.5rem;padding:0.4rem 0.75rem;font-size:0.58rem;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;border-bottom:1px solid var(--border)">
+      <span>Key</span><span>Title</span><span>Artist</span><span>Diff</span><span>Genre</span><span>Progress</span><span></span>
+    </div>`;
+    container.innerHTML = header + filteredLibrary.map(s => songRowHTML(s)).join('');
+    if (currentSetId) {
+      container.querySelectorAll('.song-row').forEach(el => {
+        initDragRow(el, el.dataset.id ? parseInt(el.dataset.id) : null);
+      });
+    }
+  } else {
+    container.innerHTML = `<div class="song-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;padding:0.5rem 0">${filteredLibrary.map(s => songCardHTML(s)).join('')}</div>`;
+  }
+}
+
+function setView(v, silent) {
+  currentView = v;
+  const g = document.getElementById('gridViewBtn');
+  const l = document.getElementById('listViewBtn');
+  if (g) g.className = 'view-btn' + (v==='grid'?' active':'');
+  if (l) l.className = 'view-btn' + (v==='list'?' active':'');
+  if (!silent) { renderFiltered(); dbSavePreferences(); }
+}
+
 function renderSidebar() {
   document.getElementById('allSongsCount').textContent = `${library.length} song${library.length!==1?'s':''}`;
 
@@ -1429,13 +1491,13 @@ Click + to create one.</div>`;
       </div>
       <div class="sidebar-item-actions">
         <button class="sidebar-icon-btn" onclick="event.stopPropagation();renameSet(${p.id})" title="Rename">✎</button>
-        <button class="sidebar-icon-btn danger" onclick="event.stopPropagation();deleteSet(${p.id})" title="Delete">✕</button>
+        <button class="sidebar-icon-btn danger" onclick="event.stopPropagation();deleteSet(${p.id})" title="Delete">x</button>
       </div>
     </div>`;
   }).join('');
 }
 
-// ── NAVIGATION ────────────────────────────────────────────────────────────────
+// -- NAVIGATION ----------------------------------------------------------------
 function showAllSongs() {
   currentSetId = null;
   document.getElementById('sidebarAll').classList.add('active');
@@ -1458,7 +1520,7 @@ function showSet(id) {
   renderLibrary();
 }
 
-// ── PLAYLIST INSIGHTS ─────────────────────────────────────────────────────────
+// -- PLAYLIST INSIGHTS ---------------------------------------------------------
 function renderSetInsights(set) {
   const panel = document.getElementById('setInsights');
   const songs = set.songIds.map(id => library.find(s => s.id === id)).filter(Boolean);
@@ -1467,7 +1529,7 @@ function renderSetInsights(set) {
     panel.style.display = 'block';
     panel.innerHTML = `<div class="insights-panel">
       <div class="insights-title">${set.emoji} ${set.name}</div>
-      <div class="insights-subtitle">${set.type} · 0 songs — add songs from your library below</div>
+      <div class="insights-subtitle">${set.type} · 0 songs - add songs from your library below</div>
     </div>`;
     return;
   }
@@ -1492,16 +1554,16 @@ function renderSetInsights(set) {
     <div class="diff-bar-hard" style="width:${hard/total*100}%"></div>
   </div>
   <div style="font-size:0.6rem;color:var(--muted);display:flex;gap:0.75rem">
-    <span style="color:var(--green-light)">■ Easy ${easy}</span>
-    <span style="color:var(--gold)">■ Med ${medium}</span>
-    <span style="color:var(--amber)">■ Hard ${hard}</span>
+    <span style="color:var(--green-light)">* Easy ${easy}</span>
+    <span style="color:var(--gold)">* Med ${medium}</span>
+    <span style="color:var(--amber)">* Hard ${hard}</span>
   </div>`;
 
   // Progress summary
   const progCounts = { unstarted:0, practiced:0, ready:0, mastered:0 };
   songs.forEach(s => { const p = progress[s.id]||'unstarted'; progCounts[p]++; });
   const progHTML = `<div style="font-size:0.68rem;line-height:2">
-    <span style="color:var(--muted)">— ${progCounts.unstarted}</span> &nbsp;
+    <span style="color:var(--muted)">- ${progCounts.unstarted}</span> &nbsp;
     <span style="color:var(--blue)">Practicing ${progCounts.practiced}</span> &nbsp;
     <span style="color:var(--gold)">Ready ${progCounts.ready}</span> &nbsp;
     <span style="color:var(--green-light)">Mastered ${progCounts.mastered}</span>
@@ -1565,7 +1627,7 @@ function suggestPentatonic(songs) {
     <span style="font-size:0.6rem;color:var(--muted)">Best fit across ${songs.length} song${songs.length!==1?'s':''}</span>`;
 }
 
-// ── ADD TO PLAYLIST ───────────────────────────────────────────────────────────
+// -- ADD TO PLAYLIST -----------------------------------------------------------
 function showAddToSetModal(songId) {
   _pendingSongForSet = songId;
   const song = library.find(s=>s.id===songId);
@@ -1586,7 +1648,7 @@ function showAddToSetModal(songId) {
             <div style="font-size:0.6rem;color:var(--muted)">${p.songIds.length} songs</div>
           </div>
         </div>
-        <div style="font-size:0.75rem">${inSet?'<span style="color:var(--green-light)">✓</span>':'<span style="color:var(--muted)">+</span>'}</div>
+        <div style="font-size:0.75rem">${inSet?'<span style="color:var(--green-light)">v</span>':'<span style="color:var(--muted)">+</span>'}</div>
       </div>`;
     }).join('');
   }
@@ -1625,11 +1687,11 @@ function showAddToSetFromLibrary() {
   showAllSongs();
   setTimeout(() => {
     document.getElementById('searchBox').focus();
-    document.getElementById('searchBox').placeholder = 'Search to find songs to add…';
+    document.getElementById('searchBox').placeholder = 'Search to find songs to add...';
   }, 100);
 }
 
-// ── PROGRESS TRACKING ─────────────────────────────────────────────────────────
+// -- PROGRESS TRACKING ---------------------------------------------------------
 async function cycleProgress(songId, event) {
   event.stopPropagation();
   const current = progress[songId] || 'unstarted';
@@ -1642,12 +1704,62 @@ async function cycleProgress(songId, event) {
   }
 }
 
+function songCardHTML(s) {
+  const chordTags = (s.chords||[]).slice(0,5).map(c=>`<span class="chord-tag">${c}</span>`).join('');
+  const more = (s.chords||[]).length > 5 ? `<span class="chord-tag">+${s.chords.length-5}</span>` : '';
+  const diffCls = s.difficulty==='Easy'?'diff-easy':s.difficulty==='Hard'?'diff-hard':'diff-medium';
+  const hasSheet = !!(s.sheetData);
+  return `<div class="song-card" id="scard-${s.id}">
+    <div class="song-card-actions">
+      <button class="icon-btn" onclick="event.stopPropagation();showAddToSetModal(${s.id})" title="Add to set">⊕</button>
+      <button class="icon-btn" onclick="event.stopPropagation();openInExplorer(${s.id})" title="Open in Key Explorer">🎸</button>
+      ${currentSetId?`<button class="icon-btn danger" onclick="event.stopPropagation();removeFromSet(${currentSetId},${s.id})" title="Remove">−</button>`:`<button class="icon-btn danger" onclick="event.stopPropagation();deleteSong(${s.id})" title="Delete">x</button>`}
+    </div>
+    <div class="song-card-view-toggle">
+      <button class="song-card-view-btn active" onclick="event.stopPropagation();setSongView(${s.id},'aid',this)">Chord Aid</button>
+      <button class="song-card-view-btn" onclick="event.stopPropagation();setSongView(${s.id},'sheet',this)">${hasSheet?'Sheet':'+ Sheet'}</button>
+    </div>
+    <div class="song-card-key">${s.key||'?'}<span> ${s.mode||''}</span></div>
+    <div class="song-card-title" onclick="showSong(${s.id})">${s.title||'Unknown'}</div>
+    <div class="song-card-artist">${s.artist||'Unknown artist'}</div>
+    <div class="song-card-chords" id="scaid-${s.id}">${chordTags}${more}</div>
+    <div class="song-card-sheet" id="scsheet-${s.id}">
+      ${hasSheet
+        ? `<img src="${s.sheetData}" alt="sheet" style="max-width:100%;max-height:100px;border-radius:4px;object-fit:contain;cursor:pointer" onclick="event.stopPropagation();viewFullSheet(${s.id})"><button onclick="event.stopPropagation();removeLinkedFile(${s.id})" style="background:none;border:none;color:var(--muted);font-size:0.65rem;cursor:pointer;margin-top:0.2rem">x Remove</button>`
+        : `<button class="sheet-upload-btn" onclick="event.stopPropagation();openLocalFilePicker(${s.id})">📎 Link local file</button>`
+      }
+    </div>
+    <div class="song-card-footer">
+      <span class="difficulty-badge ${diffCls}">${s.difficulty||'-'}</span>
+      ${progressBadgeHTML(s.id)}
+    </div>
+  </div>`;
+}
+
+function songRowHTML(s) {
+  const diffCls = s.difficulty==='Easy'?'diff-easy':s.difficulty==='Hard'?'diff-hard':'diff-medium';
+  const isSet = !!currentSetId;
+  return `<div class="song-row" data-id="${s.id}" onclick="showSong(${s.id})">
+    ${isSet?`<span class="drag-handle" onclick="event.stopPropagation()">⠿</span>`:''}
+    <div class="song-row-key">${s.key||'?'}</div>
+    <div><div class="song-row-title">${s.title||'Unknown'}</div><div class="song-row-artist">${s.artist||''}</div></div>
+    <span class="difficulty-badge ${diffCls}">${s.difficulty||'-'}</span>
+    <div style="font-size:0.65rem;color:var(--muted)">${s.genre||'-'}</div>
+    <div onclick="event.stopPropagation()">${progressBadgeHTML(s.id)}</div>
+    <div class="song-row-actions">
+      <button class="icon-btn" onclick="event.stopPropagation();showAddToSetModal(${s.id})">⊕</button>
+      <button class="icon-btn" onclick="event.stopPropagation();openInExplorer(${s.id})">🎸</button>
+      ${isSet?`<button class="icon-btn danger" onclick="event.stopPropagation();removeFromSet(${currentSetId},${s.id})">−</button>`:`<button class="icon-btn danger" onclick="event.stopPropagation();deleteSong(${s.id})">x</button>`}
+    </div>
+  </div>`;
+}
+
 function progressBadgeHTML(songId) {
   const state = progress[songId] || 'unstarted';
   return `<button class="progress-badge prog-${state}" onclick="cycleProgress(${songId},event)" title="Click to update progress">${PROGRESS_LABELS[state]}</button>`;
 }
 
-// ── DRAG TO REORDER (set view only) ─────────────────────────────────────
+// -- DRAG TO REORDER (set view only) -------------------------------------
 let dragSongId = null;
 
 function initDragRow(el, songId) {
@@ -1676,15 +1788,15 @@ function initDragRow(el, songId) {
 
 async function init() {
   // 1. Load local data + render immediately
-  loadLocalData();
-  initFileUpload();
-  renderSidebar();
-  renderLibrary();
-  updateStats();
-  loadDemoData();
+  if (typeof loadLocalData === 'function') loadLocalData();
+  if (typeof initFileUpload === 'function') initFileUpload();
+  if (typeof renderSidebar === 'function') renderSidebar();
+  if (typeof renderLibrary === 'function') renderLibrary();
+  if (typeof updateStats === 'function') updateStats();
+  if (typeof loadDemoData === 'function') loadDemoData();
 
   const bar = document.getElementById('authBarContent');
-  if (bar) bar.innerHTML = '<span style="color:var(--muted);font-size:0.65rem">Checking session…</span>';
+  if (bar) bar.innerHTML = '<span style="color:var(--muted);font-size:0.65rem">Checking session...</span>';
 
   try {
     // Check if this is an OAuth callback (URL has access_token in hash)
@@ -1765,7 +1877,7 @@ async function clearLibrary() {
   updateStats();
 }
 
-// ── ADD MODAL TABS ────────────────────────────────────────────────────────────
+// -- ADD MODAL TABS ------------------------------------------------------------
 function switchAddTab(tab) {
   ['url','search','file'].forEach(t => {
     const btn = document.getElementById('addTab' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -1785,7 +1897,7 @@ function setUrlPrefix(prefix) {
   input.focus();
 }
 
-// ── URL FETCH & ANALYSE ───────────────────────────────────────────────────────
+// -- URL FETCH & ANALYSE -------------------------------------------------------
 async function fetchAndAnalyseUrl() {
   const url = document.getElementById('urlInput').value.trim();
   if (!url || !url.startsWith('http')) {
@@ -1794,7 +1906,7 @@ async function fetchAndAnalyseUrl() {
   }
 
   document.getElementById('urlLoading').style.display = 'flex';
-  document.getElementById('urlLoadingMsg').textContent = 'Fetching page…';
+  document.getElementById('urlLoadingMsg').textContent = 'Fetching page...';
   document.getElementById('urlFetchBtn').disabled = true;
   document.getElementById('urlError').style.display = 'none';
   document.getElementById('urlPreview').style.display = 'none';
@@ -1815,7 +1927,7 @@ async function fetchAndAnalyseUrl() {
     if (!html) throw new Error('Page returned empty content');
 
     // Step 2: Extract readable text from HTML
-    document.getElementById('urlLoadingMsg').textContent = 'Analysing with AI…';
+    document.getElementById('urlLoadingMsg').textContent = 'Analysing with AI...';
     const text = htmlToText(html, url);
 
     // Step 3: Send text to Claude for analysis
@@ -1831,8 +1943,8 @@ async function fetchAndAnalyseUrl() {
   } catch(e) {
     document.getElementById('urlError').style.display = 'block';
     document.getElementById('urlError').innerHTML = `<div style="color:var(--red);font-size:0.7rem;padding:0.75rem;background:rgba(224,120,120,0.05);border-left:3px solid var(--red);border-radius:0 6px 6px 0">
-      ⚠ ${e.message}<br>
-      <span style="color:var(--muted)">Try the Upload File tab instead — screenshot the chord sheet and upload as an image.</span>
+      ! ${e.message}<br>
+      <span style="color:var(--muted)">Try the Upload File tab instead - screenshot the chord sheet and upload as an image.</span>
     </div>`;
   } finally {
     document.getElementById('urlLoading').style.display = 'none';
@@ -1857,7 +1969,7 @@ function htmlToText(html, url) {
     .trim();
 
   // Truncate to ~6000 chars to stay within token limits
-  if (text.length > 6000) text = text.substring(0, 6000) + '…';
+  if (text.length > 6000) text = text.substring(0, 6000) + '...';
   return `URL: ${url}\n\n${text}`;
 }
 
@@ -1896,7 +2008,7 @@ async function confirmAddUrl() {
   window._pendingUrlSong = null;
 }
 
-// ── SONG SEARCH ───────────────────────────────────────────────────────────────
+// -- SONG SEARCH ---------------------------------------------------------------
 async function searchTabs() {
   const q = document.getElementById('searchInput').value.trim();
   if (!q) return;
@@ -1954,7 +2066,7 @@ If no results found: []`;
 
   } catch(e) {
     document.getElementById('searchResults').innerHTML =
-      `<div style="color:var(--red);font-size:0.7rem;padding:0.75rem;background:rgba(224,120,120,0.05);border-left:3px solid var(--red);border-radius:0 6px 6px 0">⚠ ${e.message}</div>`;
+      `<div style="color:var(--red);font-size:0.7rem;padding:0.75rem;background:rgba(224,120,120,0.05);border-left:3px solid var(--red);border-radius:0 6px 6px 0">! ${e.message}</div>`;
   } finally {
     document.getElementById('searchLoading').style.display = 'none';
     document.getElementById('searchTabBtn').disabled = false;
@@ -1977,7 +2089,7 @@ function renderSearchResults(results, query) {
         <div style="font-size:0.75rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.title||'Unknown'}</div>
         <div style="font-size:0.62rem;color:var(--muted)">${r.artist||''} · <span style="color:var(--gold)">${r.type||'Tab'}</span>${r.rating?` · ★ ${parseFloat(r.rating).toFixed(1)}`:''}${r.votes?` (${r.votes} votes)`:''}</div>
       </div>
-      <div style="font-size:0.7rem;color:var(--gold);flex-shrink:0">Fetch →</div>
+      <div style="font-size:0.7rem;color:var(--gold);flex-shrink:0">Fetch -></div>
     </div>`).join('');
 }
 
@@ -1989,7 +2101,7 @@ async function fetchSearchResult(encodedUrl, encodedTitle, encodedArtist) {
   await fetchAndAnalyseUrl();
 }
 
-// ── TEXT ANALYSIS (for URL content) ──────────────────────────────────────────
+// -- TEXT ANALYSIS (for URL content) ------------------------------------------
 async function analyseTextContent(text, url) {
   const site = url.includes('ultimate-guitar') ? 'Ultimate Guitar' :
                url.includes('chordify') ? 'Chordify' :
@@ -2053,12 +2165,12 @@ async function callClaude(prompt) {
 function showAddError(msg) {
   const el = document.getElementById('addError');
   el.style.display = 'block';
-  el.innerHTML = `<div style="color:var(--red);font-size:0.7rem;padding:0.75rem;background:rgba(224,120,120,0.05);border-left:3px solid var(--red);border-radius:0 6px 6px 0">⚠ ${msg}</div>`;
+  el.innerHTML = `<div style="color:var(--red);font-size:0.7rem;padding:0.75rem;background:rgba(224,120,120,0.05);border-left:3px solid var(--red);border-radius:0 6px 6px 0">! ${msg}</div>`;
 }
 
 
 
-// ── SONG CARD VIEW TOGGLE ─────────────────────────────────────────────────────
+// -- SONG CARD VIEW TOGGLE -----------------------------------------------------
 function setSongView(songId, view, btn) {
   const card = document.getElementById('scard-' + songId);
   if (!card) return;
@@ -2110,7 +2222,7 @@ function viewFullSheet(songId) {
   </div>`;
   document.body.appendChild(overlay);
 }
-// ── END SONG CARD VIEW TOGGLE ─────────────────────────────────────────────────
+// -- END SONG CARD VIEW TOGGLE -------------------------------------------------
 
 function updateStats() {
   const bar = document.getElementById('statsBar');
@@ -2137,7 +2249,7 @@ function updateStats() {
     genres.map(g=>`<option${g===current?' selected':''}>${g}</option>`).join('');
 }
 
-// ── SONG DETAIL ───────────────────────────────────────────────────────────────
+// -- SONG DETAIL ---------------------------------------------------------------
 function showSong(id) {
   const s = library.find(x=>x.id===id);
   if (!s) return;
@@ -2179,21 +2291,21 @@ function showSong(id) {
     <div class="modal-title">${s.title||'Unknown Title'}</div>
     <div class="modal-artist">${s.artist||'Unknown Artist'}</div>
     <div class="info-row">
-      <div class="info-chip"><strong>${s.difficulty||'—'}</strong>Difficulty</div>
-      <div class="info-chip"><strong>${s.genre||'—'}</strong>Genre</div>
+      <div class="info-chip"><strong>${s.difficulty||'-'}</strong>Difficulty</div>
+      <div class="info-chip"><strong>${s.genre||'-'}</strong>Genre</div>
       <div class="info-chip"><strong>${(s.chords||[]).length}</strong>Chords</div>
       ${s.bpm?`<div class="info-chip"><strong>${s.bpm}</strong>BPM</div>`:''}
     </div>
     <div class="modal-section-label">Chords · with scale degrees</div>
     <div class="modal-chords">${chordPills}</div>
     <div style="font-size:0.6rem;color:var(--muted);margin-bottom:0.75rem">
-      <span style="color:var(--gold)">■</span> Tonic &nbsp;
-      <span style="color:var(--text)">■</span> In key &nbsp;
-      <span style="color:var(--amber)">■</span> Borrowed
+      <span style="color:var(--gold)">*</span> Tonic &nbsp;
+      <span style="color:var(--text)">*</span> In key &nbsp;
+      <span style="color:var(--amber)">*</span> Borrowed
     </div>
     ${s.notes?`<div style="font-size:0.7rem;color:var(--muted);background:var(--surface2);padding:0.75rem;border-radius:8px;line-height:1.7;margin-bottom:0.75rem">${s.notes}</div>`:''}
     <div class="modal-section-label">File</div>
-    <div style="font-size:0.68rem;color:var(--muted)">${s.fileName||'—'} · Added ${s.source==='url'?'via URL':s.source==='upload'?'via upload':'manually'}</div>
+    <div style="font-size:0.68rem;color:var(--muted)">${s.fileName||'-'} · Added ${s.source==='url'?'via URL':s.source==='upload'?'via upload':'manually'}</div>
     <div class="modal-actions">
       <button class="btn btn-primary" onclick="openInExplorer(${s.id})">🎸 Open in Key Explorer</button>
       <button class="btn btn-outline" onclick="closeSongModal();showAddToSetModal(${s.id})">⊕ Add to Set</button>
@@ -2223,8 +2335,8 @@ function openInExplorer(id) {
   window.open(`${EXPLORER_URL}?key=${key}&mode=${mode}`, '_blank');
 }
 
-// ── MODALS ───────────────────────────────────────────────────────────────────
-// ── LOCAL FILE LINKING ────────────────────────────────────────────────────────
+// -- MODALS -------------------------------------------------------------------
+// -- LOCAL FILE LINKING --------------------------------------------------------
 function openLocalFilePicker(songId) {
   const input = document.createElement('input');
   input.type = 'file';
@@ -2266,7 +2378,7 @@ function removeLinkedFile(songId) {
   saveLibrary();
   renderLibrary();
 }
-// ── END LOCAL FILE LINKING ────────────────────────────────────────────────────
+// -- END LOCAL FILE LINKING ----------------------------------------------------
 
 function showAddModal() {
   const m = document.getElementById('addModal');
@@ -2279,7 +2391,7 @@ function closeAddModal() {
   resetAdd();
 }
 
-// ── FILE UPLOAD ───────────────────────────────────────────────────────────────
+// -- FILE UPLOAD ---------------------------------------------------------------
 function initFileUpload() {
   const zone = document.getElementById('uploadZone');
   const input = document.getElementById('fileInput');
@@ -2380,7 +2492,7 @@ async function analyseAndAdd() {
   } catch(e) {
     if (err) {
       err.style.display = 'block';
-      err.innerHTML = '<div style="color:var(--red);font-size:0.7rem;padding:0.75rem;background:rgba(224,120,120,0.05);border-left:3px solid var(--red);border-radius:0 6px 6px 0">⚠ ' + e.message + '</div>';
+      err.innerHTML = '<div style="color:var(--red);font-size:0.7rem;padding:0.75rem;background:rgba(224,120,120,0.05);border-left:3px solid var(--red);border-radius:0 6px 6px 0">! ' + e.message + '</div>';
     }
   } finally {
     if (loading) loading.style.display = 'none';
@@ -2413,7 +2525,7 @@ async function analyseFileData(base64, mediaType, fileName) {
   const clean = text.replace(/```json|```/g,'').trim();
   return JSON.parse(clean);
 }
-// ── END FILE UPLOAD ───────────────────────────────────────────────────────────
+// -- END FILE UPLOAD -----------------------------------------------------------
 
 window.analyseAndAdd = typeof analyseAndAdd !== "undefined" ? analyseAndAdd : function(){};
 window.cancelScan = typeof cancelScan !== "undefined" ? cancelScan : function(){};
@@ -2454,6 +2566,60 @@ window.switchAddTab = typeof switchAddTab !== "undefined" ? switchAddTab : funct
 window.toggleSongInSet = typeof toggleSongInSet !== "undefined" ? toggleSongInSet : function(){};
 window.deleteSet = typeof deleteSet !== "undefined" ? deleteSet : function(){};
 window.removeFromSet = typeof removeFromSet !== "undefined" ? removeFromSet : function(){};
+window.renderLibrary = renderLibrary;
+window.filterLibrary = filterLibrary;
+window.setView = setView;
+
+// -- ALL FUNCTIONS EXPOSED FOR SAFARI SCOPE ----------------------------------
+if (typeof analyseFileData !== "undefined") window.analyseFileData = analyseFileData;
+if (typeof analyseTextContent !== "undefined") window.analyseTextContent = analyseTextContent;
+if (typeof attachSheet !== "undefined") window.attachSheet = attachSheet;
+if (typeof callClaude !== "undefined") window.callClaude = callClaude;
+if (typeof callClaudeText !== "undefined") window.callClaudeText = callClaudeText;
+if (typeof dbAddSong !== "undefined") window.dbAddSong = dbAddSong;
+if (typeof dbCreateSet !== "undefined") window.dbCreateSet = dbCreateSet;
+if (typeof dbDeleteSet !== "undefined") window.dbDeleteSet = dbDeleteSet;
+if (typeof dbDeleteSong !== "undefined") window.dbDeleteSong = dbDeleteSong;
+if (typeof dbReorderSet !== "undefined") window.dbReorderSet = dbReorderSet;
+if (typeof dbSavePreferences !== "undefined") window.dbSavePreferences = dbSavePreferences;
+if (typeof dbToggleSongInSet !== "undefined") window.dbToggleSongInSet = dbToggleSongInSet;
+if (typeof dbUpdateProgress !== "undefined") window.dbUpdateProgress = dbUpdateProgress;
+if (typeof dbUpdateSet !== "undefined") window.dbUpdateSet = dbUpdateSet;
+if (typeof dispKey !== "undefined") window.dispKey = dispKey;
+if (typeof hideLoginModal !== "undefined") window.hideLoginModal = hideLoginModal;
+if (typeof htmlToText !== "undefined") window.htmlToText = htmlToText;
+if (typeof init !== "undefined") window.init = init;
+if (typeof initDragRow !== "undefined") window.initDragRow = initDragRow;
+if (typeof initFileUpload !== "undefined") window.initFileUpload = initFileUpload;
+if (typeof loadAddFile !== "undefined") window.loadAddFile = loadAddFile;
+if (typeof loadLibrary !== "undefined") window.loadLibrary = loadLibrary;
+if (typeof loadLocalData !== "undefined") window.loadLocalData = loadLocalData;
+if (typeof loadProgress !== "undefined") window.loadProgress = loadProgress;
+if (typeof loadSets !== "undefined") window.loadSets = loadSets;
+if (typeof openLocalFilePicker !== "undefined") window.openLocalFilePicker = openLocalFilePicker;
+if (typeof progressBadgeHTML !== "undefined") window.progressBadgeHTML = progressBadgeHTML;
+if (typeof removeLinkedFile !== "undefined") window.removeLinkedFile = removeLinkedFile;
+if (typeof renderFiltered !== "undefined") window.renderFiltered = renderFiltered;
+if (typeof renderSearchResults !== "undefined") window.renderSearchResults = renderSearchResults;
+if (typeof renderSetInsights !== "undefined") window.renderSetInsights = renderSetInsights;
+if (typeof renderSidebar !== "undefined") window.renderSidebar = renderSidebar;
+if (typeof saveLibrary !== "undefined") window.saveLibrary = saveLibrary;
+if (typeof saveProgress !== "undefined") window.saveProgress = saveProgress;
+if (typeof saveSets !== "undefined") window.saveSets = saveSets;
+if (typeof setSongView !== "undefined") window.setSongView = setSongView;
+if (typeof showAddError !== "undefined") window.showAddError = showAddError;
+if (typeof showAddPreview !== "undefined") window.showAddPreview = showAddPreview;
+if (typeof showAddToSetModal !== "undefined") window.showAddToSetModal = showAddToSetModal;
+if (typeof showLoginError !== "undefined") window.showLoginError = showLoginError;
+if (typeof showUrlPreview !== "undefined") window.showUrlPreview = showUrlPreview;
+if (typeof signInWithGoogle !== "undefined") window.signInWithGoogle = signInWithGoogle;
+if (typeof songCardHTML !== "undefined") window.songCardHTML = songCardHTML;
+if (typeof songRowHTML !== "undefined") window.songRowHTML = songRowHTML;
+if (typeof suggestPentatonic !== "undefined") window.suggestPentatonic = suggestPentatonic;
+if (typeof syncFromSupabase !== "undefined") window.syncFromSupabase = syncFromSupabase;
+if (typeof updateAuthBar !== "undefined") window.updateAuthBar = updateAuthBar;
+if (typeof updateStats !== "undefined") window.updateStats = updateStats;
+if (typeof viewFullSheet !== "undefined") window.viewFullSheet = viewFullSheet;
 
 document.addEventListener('DOMContentLoaded', function() { init(); });
 </script>
