@@ -4,17 +4,28 @@
 <meta charset="UTF-8">
 <title>Signing in...</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  body { background:#1F1F1F; color:#F4F1E8; font-family:'Courier New',monospace; padding:2rem; }
+  .ok { color:#6FA873; }
+  .err { color:#E25757; }
+  p { margin:0.3rem 0; }
+</style>
 </head>
 <body>
-<p style="font-family:monospace;padding:2rem">Signing in...</p>
+<div id="log"><p>Starting...</p></div>
 <script>
-const SUPABASE_URL = 'https://wmxxomiuzdhmvysefrjg.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_oMyje3R_YGvTETd1qtLTCg_KC314Teu';
+var SUPABASE_URL = 'https://wmxxomiuzdhmvysefrjg.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_oMyje3R_YGvTETd1qtLTCg_KC314Teu';
+var STORAGE_KEY = 'guitar-explorer-auth';
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+function log(msg, cls) {
+  document.getElementById('log').innerHTML += '<p class="'+(cls||'')+'">' + msg + '</p>';
+}
+
+var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
     persistSession: true,
-    storageKey: 'guitar-explorer-auth',
+    storageKey: STORAGE_KEY,
     storage: window.localStorage,
     autoRefreshToken: true,
     detectSessionInUrl: true,
@@ -23,42 +34,53 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 });
 
 async function handleCallback() {
-  const hash = window.location.hash;
-  const query = window.location.search;
+  var hash = window.location.hash;
+  log('Hash: ' + (hash.length > 10 ? hash.substring(0,30)+'...' : 'empty'));
 
-  console.log('Hash length:', hash.length);
-  console.log('Has access_token:', hash.includes('access_token'));
+  if (hash && hash.includes('access_token')) {
+    log('Token found!', 'ok');
+    var params = new URLSearchParams(hash.substring(1));
+    var accessToken = params.get('access_token');
+    var refreshToken = params.get('refresh_token') || '';
 
-  if (hash.includes('access_token')) {
-    const params = new URLSearchParams(hash.substring(1));
-    const accessToken = params.get('access_token');
-    const refreshToken = params.get('refresh_token');
-    console.log('Token found, setting session...');
-    
-    const { data, error } = await sb.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken || ''
-    });
-    console.log('setSession user:', data?.session?.user?.email);
-    console.log('setSession error:', error);
-    
-    // Verify it was saved
-    const { data: { session } } = await sb.auth.getSession();
-    console.log('Verified session:', session?.user?.email);
-    
-    // Check localStorage directly
-    const stored = localStorage.getItem('guitar-explorer-auth');
-    console.log('localStorage stored:', stored ? 'YES' : 'NO');
+    try {
+      var result = await sb.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      });
+      
+      if (result.error) {
+        log('Error: ' + result.error.message, 'err');
+      } else if (result.data && result.data.session) {
+        log('Signed in as: ' + result.data.session.user.email, 'ok');
+        var stored = localStorage.getItem(STORAGE_KEY);
+        log('localStorage saved: ' + (stored ? 'YES' : 'NO'), stored ? 'ok' : 'err');
+        log('Going to library...', 'ok');
+        setTimeout(function() {
+          window.location.replace('https://guitar-explorer.com/chord-library.html');
+        }, 1500);
+        return;
+      }
+    } catch(e) {
+      log('Exception: ' + e.message, 'err');
+    }
   } else {
-    console.log('No token in hash - checking existing session');
-    const { data: { session } } = await sb.auth.getSession();
-    console.log('Existing session:', session?.user?.email);
+    log('No token - checking existing session...');
+    try {
+      var s = await sb.auth.getSession();
+      if (s.data && s.data.session) {
+        log('Session exists: ' + s.data.session.user.email, 'ok');
+        window.location.replace('https://guitar-explorer.com/chord-library.html');
+        return;
+      }
+    } catch(e) {}
+    log('No session found', 'err');
   }
 
-  // Wait 3 seconds so we can read the logs, then redirect
-  document.querySelector('p').textContent = 'Done - redirecting in 3 seconds...';
-  await new Promise(r => setTimeout(r, 3000));
-  window.location.href = 'https://guitar-explorer.com/chord-library.html';
+  log('Redirecting in 3s...');
+  setTimeout(function() {
+    window.location.replace('https://guitar-explorer.com/chord-library.html');
+  }, 3000);
 }
 
 handleCallback();
