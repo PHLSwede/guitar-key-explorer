@@ -693,7 +693,7 @@
 
 <script>
 // Safari onclick safety stubs - replaced by full definitions when script loads
-var _safariStubs = ['showAddModal','switchAddTab','showScanModal','connectDrive','toggleLibTheme','setSongView','attachSheet','viewFullSheet','signInWithGoogle','openLocalFilePicker','openLinkedFile','removeLinkedFile',
+var _safariStubs = ['initFileUpload','loadAddFile','resetAdd','analyseAndAdd','showAddModal','switchAddTab','showScanModal','connectDrive','toggleLibTheme','setSongView','attachSheet','viewFullSheet','signInWithGoogle','openLocalFilePicker','openLinkedFile','removeLinkedFile',
   'showSetCreateModal','showSet','showAllSongs','showSong','deleteSong','cycleProgress',
   'closeAddModal','closeSetCreateModal','closeScanModal','closeSongModal','closeAddToSetModal',
   'createSet','deleteSet','renameSet','selectSetType','setSetEmoji','toggleSongInSet',
@@ -2224,14 +2224,149 @@ function removeLinkedFile(songId) {
 function showAddModal() {
   const m = document.getElementById('addModal');
   if (m) { m.style.display = 'flex'; m.classList.add('open'); }
-  switchAddTab('file'); // default to file tab
+  switchAddTab('file');
 }
 function closeAddModal() {
   const m = document.getElementById('addModal');
   if (m) { m.style.display = ''; m.classList.remove('open'); }
   resetAdd();
 }
-// closeAddModal defined above
+
+// ── FILE UPLOAD ───────────────────────────────────────────────────────────────
+function initFileUpload() {
+  const zone = document.getElementById('uploadZone');
+  const input = document.getElementById('fileInput');
+  if (!zone || !input) return;
+  zone.addEventListener('click', () => input.click());
+  input.addEventListener('change', e => { if (e.target.files[0]) loadAddFile(e.target.files[0]); });
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) loadAddFile(e.dataTransfer.files[0]);
+  });
+}
+
+function loadAddFile(file) {
+  addFileName = file.name;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    if (file.type.startsWith('image/')) {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1200;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h*MAX/w); w = MAX; }
+          else { w = Math.round(w*MAX/h); h = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
+        ctx.drawImage(img, 0, 0, w, h);
+        addFileBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+        addFileType = 'image/jpeg';
+        showAddPreview(file.name);
+      };
+      img.src = ev.target.result;
+    } else if (file.type === 'application/pdf') {
+      addFileBase64 = ev.target.result.split(',')[1];
+      addFileType = 'application/pdf';
+      showAddPreview(file.name);
+    } else {
+      addFileBase64 = btoa(unescape(encodeURIComponent(ev.target.result)));
+      addFileType = 'text/plain';
+      showAddPreview(file.name);
+    }
+  };
+  if (file.type.startsWith('text')) reader.readAsText(file);
+  else reader.readAsDataURL(file);
+}
+
+function showAddPreview(name) {
+  const zone = document.getElementById('uploadZone');
+  const preview = document.getElementById('addPreview');
+  const fileName = document.getElementById('addFileName');
+  if (zone) zone.style.display = 'none';
+  if (preview) preview.style.display = 'block';
+  if (fileName) fileName.textContent = '📄 ' + name;
+  const err = document.getElementById('addError');
+  if (err) err.style.display = 'none';
+}
+
+function resetAdd() {
+  addFileBase64 = null;
+  addFileName = '';
+  const input = document.getElementById('fileInput');
+  if (input) input.value = '';
+  const zone = document.getElementById('uploadZone');
+  if (zone) zone.style.display = 'flex';
+  const preview = document.getElementById('addPreview');
+  if (preview) preview.style.display = 'none';
+  const err = document.getElementById('addError');
+  if (err) err.style.display = 'none';
+}
+
+async function analyseAndAdd() {
+  if (!addFileBase64) return;
+  const loading = document.getElementById('addLoading');
+  const btn = document.getElementById('analyseBtn');
+  const errEl = document.getElementById('addError');
+  if (loading) loading.style.display = 'flex';
+  if (btn) btn.disabled = true;
+  if (errEl) errEl.style.display = 'none';
+
+  try {
+    const song = await analyseFileData(addFileBase64, addFileType, addFileName);
+    if (song.error) throw new Error(song.error);
+    song.id = Date.now();
+    song.fileName = addFileName;
+    song.source = 'upload';
+    library.push(song);
+    await dbAddSong(song);
+    renderLibrary();
+    updateStats();
+    closeAddModal();
+    resetAdd();
+  } catch(e) {
+    if (errEl) {
+      errEl.style.display = 'block';
+      errEl.innerHTML = '<div style="color:var(--red);font-size:0.7rem;padding:0.75rem;background:rgba(224,120,120,0.05);border-left:3px solid var(--red);border-radius:0 6px 6px 0">⚠ ' + e.message + '</div>';
+    }
+  } finally {
+    if (loading) loading.style.display = 'none';
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function analyseFileData(base64, mediaType, fileName) {
+  const prompt = 'Analyse this chord sheet. Extract all information.\n\nReturn ONLY valid JSON:\n{\n  "title": "Song Title",\n  "artist": "Artist Name",\n  "key": "C",\n  "mode": "major",\n  "chords": ["C", "Am", "F", "G"],\n  "difficulty": "Easy",\n  "genre": "Pop",\n  "bpm": null,\n  "notes": "Any useful observation"\n}\n\nRules:\n- mode must be "major" or "minor"\n- key must use sharps not flats\n- difficulty: Easy / Medium / Hard\n- If unreadable: {"error": "Could not read this file"}\n- Filename hint: ' + fileName;
+
+  const messages = [{
+    role: 'user',
+    content: mediaType === 'text/plain'
+      ? [{ type: 'text', text: prompt + '\n\nFile:\n' + atob(base64) }]
+      : [
+          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+          { type: 'text', text: prompt }
+        ]
+  }];
+
+  const response = await fetch(WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 800, messages })
+  });
+
+  if (!response.ok) throw new Error('Worker error ' + response.status);
+  const data = await response.json();
+  const text = (data.content||[]).map(b => b.text||'').join('');
+  const clean = text.replace(/```json|```/g,'').trim();
+  return JSON.parse(clean);
+}
+// ── END FILE UPLOAD ───────────────────────────────────────────────────────────
+
 function showScanModal() {
   document.getElementById('scanModal').classList.add('open');
   if (driveConnected) loadDriveFolders();
@@ -2306,10 +2441,150 @@ window.signInWithGoogle = signInWithGoogle;
 window.openLocalFilePicker = openLocalFilePicker;
 window.openLinkedFile = openLinkedFile;
 window.removeLinkedFile = removeLinkedFile;
+window.initFileUpload = initFileUpload;
+window.loadAddFile = loadAddFile;
+window.resetAdd = resetAdd;
+window.analyseAndAdd = analyseAndAdd;
 window.setSongView = setSongView;
 window.attachSheet = attachSheet;
 window.viewFullSheet = viewFullSheet;
 // Expose all functions to global scope for Safari
+// ── FILE UPLOAD ───────────────────────────────────────────────────────────────
+function initFileUpload() {
+  const zone = document.getElementById('uploadZone');
+  const input = document.getElementById('fileInput');
+  if (!zone || !input) return;
+  zone.addEventListener('click', () => input.click());
+  input.addEventListener('change', e => { if (e.target.files[0]) loadAddFile(e.target.files[0]); });
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) loadAddFile(e.dataTransfer.files[0]);
+  });
+}
+
+function loadAddFile(file) {
+  addFileName = file.name;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    if (file.type.startsWith('image/')) {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1200;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h*MAX/w); w = MAX; }
+          else { w = Math.round(w*MAX/h); h = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
+        ctx.drawImage(img, 0, 0, w, h);
+        addFileBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+        addFileType = 'image/jpeg';
+        showAddPreview(file.name);
+      };
+      img.src = ev.target.result;
+    } else if (file.type === 'application/pdf') {
+      addFileBase64 = ev.target.result.split(',')[1];
+      addFileType = 'application/pdf';
+      showAddPreview(file.name);
+    } else {
+      addFileBase64 = btoa(unescape(encodeURIComponent(ev.target.result)));
+      addFileType = 'text/plain';
+      showAddPreview(file.name);
+    }
+  };
+  if (file.type.startsWith('text')) reader.readAsText(file);
+  else reader.readAsDataURL(file);
+}
+
+function showAddPreview(name) {
+  const zone = document.getElementById('uploadZone');
+  const preview = document.getElementById('addPreview');
+  const fname = document.getElementById('addFileName');
+  const err = document.getElementById('addError');
+  if (zone) zone.style.display = 'none';
+  if (preview) preview.style.display = 'block';
+  if (fname) fname.textContent = '📄 ' + name;
+  if (err) err.style.display = 'none';
+}
+
+function resetAdd() {
+  addFileBase64 = null;
+  addFileType = 'image/jpeg';
+  addFileName = '';
+  const input = document.getElementById('fileInput');
+  const zone = document.getElementById('uploadZone');
+  const preview = document.getElementById('addPreview');
+  const err = document.getElementById('addError');
+  if (input) input.value = '';
+  if (zone) zone.style.display = '';
+  if (preview) preview.style.display = 'none';
+  if (err) err.style.display = 'none';
+}
+
+async function analyseAndAdd() {
+  if (!addFileBase64) return;
+  const loading = document.getElementById('addLoading');
+  const btn = document.getElementById('analyseBtn');
+  const err = document.getElementById('addError');
+  if (loading) loading.style.display = 'flex';
+  if (btn) btn.disabled = true;
+  if (err) err.style.display = 'none';
+
+  try {
+    const song = await analyseFileData(addFileBase64, addFileType, addFileName);
+    if (song.error) throw new Error(song.error);
+    song.id = Date.now();
+    song.fileName = addFileName;
+    song.source = 'upload';
+    library.push(song);
+    await dbAddSong(song);
+    renderLibrary();
+    updateStats();
+    closeAddModal();
+    resetAdd();
+  } catch(e) {
+    if (err) {
+      err.style.display = 'block';
+      err.innerHTML = '<div style="color:var(--red);font-size:0.7rem;padding:0.75rem;background:rgba(224,120,120,0.05);border-left:3px solid var(--red);border-radius:0 6px 6px 0">⚠ ' + e.message + '</div>';
+    }
+  } finally {
+    if (loading) loading.style.display = 'none';
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function analyseFileData(base64, mediaType, fileName) {
+  const prompt = 'Analyse this chord sheet / music document. Extract all information you can see.\n\nReturn ONLY valid JSON (no markdown, no explanation):\n{\n  "title": "Song Title",\n  "artist": "Artist Name",\n  "key": "C",\n  "mode": "major",\n  "chords": ["C", "Am", "F", "G"],\n  "difficulty": "Easy",\n  "genre": "Pop",\n  "bpm": null,\n  "notes": "Any useful observation"\n}\n\nRules:\n- mode must be "major" or "minor"\n- key must use sharps: C# not Db\n- difficulty: Easy/Medium/Hard\n- If unreadable: {"error": "Could not read this file"}\n- If title not visible, use filename: "' + fileName + '"';
+
+  const messages = [{
+    role: 'user',
+    content: mediaType === 'text/plain'
+      ? [{ type: 'text', text: prompt + '\n\nFile content:\n' + atob(base64) }]
+      : [
+          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+          { type: 'text', text: prompt }
+        ]
+  }];
+
+  const response = await fetch(WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 800, messages })
+  });
+
+  if (!response.ok) throw new Error('Worker error ' + response.status);
+  const data = await response.json();
+  const text = (data.content||[]).map(b => b.text||'').join('');
+  const clean = text.replace(/```json|```/g,'').trim();
+  return JSON.parse(clean);
+}
+// ── END FILE UPLOAD ───────────────────────────────────────────────────────────
+
 window.analyseAndAdd = typeof analyseAndAdd !== "undefined" ? analyseAndAdd : function(){};
 window.cancelScan = typeof cancelScan !== "undefined" ? cancelScan : function(){};
 window.clearLibrary = typeof clearLibrary !== "undefined" ? clearLibrary : function(){};
