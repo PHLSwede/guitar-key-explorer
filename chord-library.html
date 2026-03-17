@@ -41,6 +41,53 @@
 
     --surface-hover: #3D3D3A;
   }
+
+  /* Theme toggle */
+  .theme-toggle {
+    display:inline-flex;align-items:center;gap:0.5rem;
+    background:var(--surface2);border:1px solid var(--surface3);
+    border-radius:20px;padding:0.3rem 0.75rem;
+    cursor:pointer;font-family:var(--font-mono,'Space Mono',monospace);
+    font-size:0.62rem;color:var(--muted);transition:all 0.15s;user-select:none;
+  }
+  .theme-toggle:hover{border-color:var(--gold-light);color:var(--text);}
+  .theme-toggle-track{
+    width:28px;height:16px;border-radius:8px;
+    background:var(--surface3);position:relative;transition:background 0.2s;flex-shrink:0;
+  }
+  [data-theme="open"] .theme-toggle-track{background:#B57A2D;}
+  .theme-toggle-thumb{
+    position:absolute;top:2px;left:2px;
+    width:12px;height:12px;border-radius:50%;
+    background:var(--muted);transition:all 0.2s;
+  }
+  [data-theme="open"] .theme-toggle-thumb{left:14px;background:white;}
+  *, *::before, *::after {
+    transition: background-color 0.25s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+  svg * { transition: none !important; }
+
+  [data-theme="open"] {
+    --bg: #F5F2EA;
+    --surface: #FFFFFF;
+    --surface2: #EFE7D6;
+    --surface3: #E3D9C6;
+    --text: #2B2B2B;
+    --muted: #6B6B6B;
+    --border: #DDD5C4;
+    --cream: #2B2B2B;
+    --gold: #C8952A;
+    --gold-light: #B57A2D;
+    --amber: #B57A2D;
+    --brass: #B57A2D;
+    --green: #5E8C61;
+    --green-light: #7AAA7D;
+    --warning: #D6A52C;
+    --red: #D64545;
+    --surface-hover: #E3D9C6;
+    --I: #B57A2D; --II: #3A5A78; --III: #5E8C61;
+    --IV: #8C4A6E; --V: #C8952A; --VI: #3A8C8C; --VII: #7A4A9E;
+  }
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
     background: var(--bg);
@@ -589,6 +636,19 @@
   ::-webkit-scrollbar-track { background: var(--surface); }
   ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
 </style>
+
+<script>
+// Safari onclick safety stubs - replaced by full definitions when script loads
+var _safariStubs = ['showAddModal','switchAddTab','showScanModal','connectDrive',
+  'showSetCreateModal','showSet','showAllSongs','showSong','deleteSong','cycleProgress',
+  'closeAddModal','closeSetCreateModal','closeScanModal','closeSongModal','closeAddToSetModal',
+  'createSet','deleteSet','renameSet','selectSetType','setSetEmoji','toggleSongInSet',
+  'removeFromSet','setView','filterLibrary','clearLibrary','analyseAndAdd','confirmAddUrl',
+  'resetAdd','fetchAndAnalyseUrl','fetchSearchResult','searchTabs','setUrlPrefix',
+  'switchAddTab','startScan','cancelScan','showAddToSetFromLibrary','openInExplorer',
+  'showLoginModal','skipLogin','sendMagicLink','signOut','connectDrive','showScanModal'];
+_safariStubs.forEach(function(fn) { window[fn] = function() { console.log('stub:'+fn); }; });
+</script>
 </head>
 <body>
 
@@ -623,7 +683,7 @@
   <div class="header-left">
     <h1>Chord Sheet Library</h1>
     <p>by Oskar Johansson · Scan · Analyse · Build Your Sets</p>
-    <p style="font-size:0.55rem;color:var(--muted);margin-top:0.15rem;letter-spacing:0.1em">v2.1 · 2026.03.16 15:42</p>
+    <p style="font-size:0.55rem;color:var(--muted);margin-top:0.15rem;letter-spacing:0.1em">v2.1 · 2026.03.17 01:29</p>
   </div>
   <div class="header-right">
     <a href="guitar-key-explorer.html" class="explorer-link">← Key Explorer</a>
@@ -631,6 +691,10 @@
     <button class="btn btn-ghost" onclick="showAddModal();switchAddTab('url')">🔗 Add Tab URL</button>
     <button class="btn btn-outline" onclick="showScanModal()" id="scanBtn">⟳ Scan Drive</button>
     <button class="btn btn-primary" id="connectBtn" onclick="connectDrive()">Connect Google Drive</button>
+    <button class="theme-toggle" onclick="toggleLibTheme()" id="libThemeBtn">
+      <div class="theme-toggle-track"><div class="theme-toggle-thumb"></div></div>
+      <span id="libThemeLabel">Studio Dark</span>
+    </button>
   </div>
 </div>
 
@@ -2483,6 +2547,24 @@ function loadDemoData() {
 // ── START ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() { init(); });
 
+
+function toggleLibTheme() {
+  const html = document.documentElement;
+  const isOpen = html.getAttribute('data-theme') === 'open';
+  html.setAttribute('data-theme', isOpen ? 'dark' : 'open');
+  document.getElementById('libThemeLabel').textContent = isOpen ? 'Studio Dark' : 'Open Stage';
+  localStorage.setItem('gxTheme', isOpen ? 'dark' : 'open');
+}
+
+// Restore saved theme
+(function() {
+  const saved = localStorage.getItem('gxTheme');
+  if (saved === 'open') {
+    document.documentElement.setAttribute('data-theme', 'open');
+    const lbl = document.getElementById('libThemeLabel');
+    if (lbl) lbl.textContent = 'Open Stage';
+  }
+})();
 // Expose all functions to global scope for Safari
 window.analyseAndAdd = typeof analyseAndAdd !== "undefined" ? analyseAndAdd : function(){};
 window.cancelScan = typeof cancelScan !== "undefined" ? cancelScan : function(){};
