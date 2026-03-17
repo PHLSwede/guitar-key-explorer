@@ -23,39 +23,42 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 });
 
 async function handleCallback() {
-  // The hash contains the token - read it before anything else
   const hash = window.location.hash;
   const query = window.location.search;
 
-  console.log('Callback hash length:', hash.length);
-  console.log('Callback query:', query);
+  console.log('Hash length:', hash.length);
+  console.log('Has access_token:', hash.includes('access_token'));
 
-  // Try to get session - Supabase should auto-detect from hash
-  const { data: { session }, error } = await sb.auth.getSession();
-  console.log('Session:', session?.user?.email, error);
-
-  if (session?.user) {
-    // Session established - redirect to library
-    window.location.href = 'https://guitar-explorer.com/chord-library.html';
-  } else if (hash.includes('access_token')) {
-    // Manually parse and set session
+  if (hash.includes('access_token')) {
     const params = new URLSearchParams(hash.substring(1));
     const accessToken = params.get('access_token');
     const refreshToken = params.get('refresh_token');
-    if (accessToken) {
-      const { data, error: setErr } = await sb.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken || ''
-      });
-      console.log('setSession:', data?.session?.user?.email, setErr);
-      window.location.href = 'https://guitar-explorer.com/chord-library.html';
-    } else {
-      window.location.href = 'https://guitar-explorer.com/chord-library.html';
-    }
+    console.log('Token found, setting session...');
+    
+    const { data, error } = await sb.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken || ''
+    });
+    console.log('setSession user:', data?.session?.user?.email);
+    console.log('setSession error:', error);
+    
+    // Verify it was saved
+    const { data: { session } } = await sb.auth.getSession();
+    console.log('Verified session:', session?.user?.email);
+    
+    // Check localStorage directly
+    const stored = localStorage.getItem('guitar-explorer-auth');
+    console.log('localStorage stored:', stored ? 'YES' : 'NO');
   } else {
-    // No token found - go back to library anyway
-    window.location.href = 'https://guitar-explorer.com/chord-library.html';
+    console.log('No token in hash - checking existing session');
+    const { data: { session } } = await sb.auth.getSession();
+    console.log('Existing session:', session?.user?.email);
   }
+
+  // Wait 3 seconds so we can read the logs, then redirect
+  document.querySelector('p').textContent = 'Done - redirecting in 3 seconds...';
+  await new Promise(r => setTimeout(r, 3000));
+  window.location.href = 'https://guitar-explorer.com/chord-library.html';
 }
 
 handleCallback();
