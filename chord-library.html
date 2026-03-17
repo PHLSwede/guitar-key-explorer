@@ -639,7 +639,7 @@
 
 <script>
 // Safari onclick safety stubs - replaced by full definitions when script loads
-var _safariStubs = ['showAddModal','switchAddTab','showScanModal','connectDrive',
+var _safariStubs = ['showAddModal','switchAddTab','showScanModal','connectDrive','toggleLibTheme',
   'showSetCreateModal','showSet','showAllSongs','showSong','deleteSong','cycleProgress',
   'closeAddModal','closeSetCreateModal','closeScanModal','closeSongModal','closeAddToSetModal',
   'createSet','deleteSet','renameSet','selectSetType','setSetEmoji','toggleSongInSet',
@@ -1315,12 +1315,6 @@ async function renameSet(id) {
   if (name && name.trim()) {
     p.name = name.trim();
     await dbUpdateSet(p);
-    renderSidebar();
-    if (currentSetId === id) renderSetInsights(p);
-  }
-}
-    p.name = name.trim();
-    saveSets();
     renderSidebar();
     if (currentSetId === id) renderSetInsights(p);
   }
@@ -2565,6 +2559,7 @@ function toggleLibTheme() {
     if (lbl) lbl.textContent = 'Open Stage';
   }
 })();
+window.toggleLibTheme = toggleLibTheme;
 // Expose all functions to global scope for Safari
 window.analyseAndAdd = typeof analyseAndAdd !== "undefined" ? analyseAndAdd : function(){};
 window.cancelScan = typeof cancelScan !== "undefined" ? cancelScan : function(){};
