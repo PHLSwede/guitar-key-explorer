@@ -1650,7 +1650,7 @@ function initDragRow(el, songId) {
 
 
 async function init() {
-  // 1. Load local data + render immediately — app works as guest right away
+  // 1. Load local data + render immediately
   loadLocalData();
   initFileUpload();
   renderSidebar();
@@ -1658,18 +1658,21 @@ async function init() {
   updateStats();
   loadDemoData();
 
-  // Show minimal auth bar while checking session
   const bar = document.getElementById('authBarContent');
   if (bar) bar.innerHTML = '<span style="color:var(--muted);font-size:0.65rem">Checking session…</span>';
 
-  // 2. Let Supabase process any OAuth hash in URL first
-  // then check session — this catches Google OAuth redirects
   try {
-    // Small delay to let Supabase process the URL hash from OAuth redirect
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Check if this is an OAuth callback (URL has access_token in hash)
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token')) {
+      // Let Supabase process the hash
+      await new Promise(resolve => setTimeout(resolve, 800));
+      // Clear the hash from URL without reload
+      window.history.replaceState(null, '', window.location.pathname);
+    }
 
-    const { data: { session }, error } = await sb.auth.getSession();
-    console.log('Session check:', session?.user?.email, error);
+    // Now get session
+    const { data: { session } } = await sb.auth.getSession();
     if (session?.user) {
       currentUser = session.user;
       updateAuthBar(currentUser);
@@ -1682,22 +1685,21 @@ async function init() {
     // Listen for future auth changes
     sb.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth event:', event, session?.user?.email);
-      if (event === 'SIGNED_IN' && session?.user) {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
         currentUser = session.user;
         updateAuthBar(currentUser);
-        await syncFromSupabase();
-        renderSidebar(); renderLibrary(); updateStats();
+        if (event === 'SIGNED_IN') {
+          await syncFromSupabase();
+          renderSidebar(); renderLibrary(); updateStats();
+        }
       } else if (event === 'SIGNED_OUT') {
         currentUser = null;
         updateAuthBar(null);
-      } else if (event === 'INITIAL_SESSION' && session?.user) {
-        currentUser = session.user;
-        updateAuthBar(currentUser);
       }
     });
 
   } catch(e) {
-    console.log('Running in guest mode:', e.message);
+    console.log('Guest mode:', e.message);
     updateAuthBar(null);
   }
 }
@@ -2232,223 +2234,6 @@ function closeAddModal() {
   resetAdd();
 }
 
-// ── FILE UPLOAD ───────────────────────────────────────────────────────────────
-function initFileUpload() {
-  const zone = document.getElementById('uploadZone');
-  const input = document.getElementById('fileInput');
-  if (!zone || !input) return;
-  zone.addEventListener('click', () => input.click());
-  input.addEventListener('change', e => { if (e.target.files[0]) loadAddFile(e.target.files[0]); });
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-  zone.addEventListener('drop', e => {
-    e.preventDefault(); zone.classList.remove('drag-over');
-    if (e.dataTransfer.files[0]) loadAddFile(e.dataTransfer.files[0]);
-  });
-}
-
-function loadAddFile(file) {
-  addFileName = file.name;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    if (file.type.startsWith('image/')) {
-      const img = new Image();
-      img.onload = () => {
-        const MAX = 1200;
-        let w = img.width, h = img.height;
-        if (w > MAX || h > MAX) {
-          if (w > h) { h = Math.round(h*MAX/w); w = MAX; }
-          else { w = Math.round(w*MAX/h); h = MAX; }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
-        ctx.drawImage(img, 0, 0, w, h);
-        addFileBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
-        addFileType = 'image/jpeg';
-        showAddPreview(file.name);
-      };
-      img.src = ev.target.result;
-    } else if (file.type === 'application/pdf') {
-      addFileBase64 = ev.target.result.split(',')[1];
-      addFileType = 'application/pdf';
-      showAddPreview(file.name);
-    } else {
-      addFileBase64 = btoa(unescape(encodeURIComponent(ev.target.result)));
-      addFileType = 'text/plain';
-      showAddPreview(file.name);
-    }
-  };
-  if (file.type.startsWith('text')) reader.readAsText(file);
-  else reader.readAsDataURL(file);
-}
-
-function showAddPreview(name) {
-  const zone = document.getElementById('uploadZone');
-  const preview = document.getElementById('addPreview');
-  const fileName = document.getElementById('addFileName');
-  if (zone) zone.style.display = 'none';
-  if (preview) preview.style.display = 'block';
-  if (fileName) fileName.textContent = '📄 ' + name;
-  const err = document.getElementById('addError');
-  if (err) err.style.display = 'none';
-}
-
-function resetAdd() {
-  addFileBase64 = null;
-  addFileName = '';
-  const input = document.getElementById('fileInput');
-  if (input) input.value = '';
-  const zone = document.getElementById('uploadZone');
-  if (zone) zone.style.display = 'flex';
-  const preview = document.getElementById('addPreview');
-  if (preview) preview.style.display = 'none';
-  const err = document.getElementById('addError');
-  if (err) err.style.display = 'none';
-}
-
-async function analyseAndAdd() {
-  if (!addFileBase64) return;
-  const loading = document.getElementById('addLoading');
-  const btn = document.getElementById('analyseBtn');
-  const errEl = document.getElementById('addError');
-  if (loading) loading.style.display = 'flex';
-  if (btn) btn.disabled = true;
-  if (errEl) errEl.style.display = 'none';
-
-  try {
-    const song = await analyseFileData(addFileBase64, addFileType, addFileName);
-    if (song.error) throw new Error(song.error);
-    song.id = Date.now();
-    song.fileName = addFileName;
-    song.source = 'upload';
-    library.push(song);
-    await dbAddSong(song);
-    renderLibrary();
-    updateStats();
-    closeAddModal();
-    resetAdd();
-  } catch(e) {
-    if (errEl) {
-      errEl.style.display = 'block';
-      errEl.innerHTML = '<div style="color:var(--red);font-size:0.7rem;padding:0.75rem;background:rgba(224,120,120,0.05);border-left:3px solid var(--red);border-radius:0 6px 6px 0">⚠ ' + e.message + '</div>';
-    }
-  } finally {
-    if (loading) loading.style.display = 'none';
-    if (btn) btn.disabled = false;
-  }
-}
-
-async function analyseFileData(base64, mediaType, fileName) {
-  const prompt = 'Analyse this chord sheet. Extract all information.\n\nReturn ONLY valid JSON:\n{\n  "title": "Song Title",\n  "artist": "Artist Name",\n  "key": "C",\n  "mode": "major",\n  "chords": ["C", "Am", "F", "G"],\n  "difficulty": "Easy",\n  "genre": "Pop",\n  "bpm": null,\n  "notes": "Any useful observation"\n}\n\nRules:\n- mode must be "major" or "minor"\n- key must use sharps not flats\n- difficulty: Easy / Medium / Hard\n- If unreadable: {"error": "Could not read this file"}\n- Filename hint: ' + fileName;
-
-  const messages = [{
-    role: 'user',
-    content: mediaType === 'text/plain'
-      ? [{ type: 'text', text: prompt + '\n\nFile:\n' + atob(base64) }]
-      : [
-          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-          { type: 'text', text: prompt }
-        ]
-  }];
-
-  const response = await fetch(WORKER_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 800, messages })
-  });
-
-  if (!response.ok) throw new Error('Worker error ' + response.status);
-  const data = await response.json();
-  const text = (data.content||[]).map(b => b.text||'').join('');
-  const clean = text.replace(/```json|```/g,'').trim();
-  return JSON.parse(clean);
-}
-// ── END FILE UPLOAD ───────────────────────────────────────────────────────────
-
-function showScanModal() {
-  document.getElementById('scanModal').classList.add('open');
-  if (driveConnected) loadDriveFolders();
-}
-function closeScanModal() { document.getElementById('scanModal').classList.remove('open'); }
-
-// ── VIEW TOGGLE ───────────────────────────────────────────────────────────────
-function setView(v, silent=false) {
-  currentView = v;
-  document.getElementById('gridViewBtn').className = 'view-btn' + (v==='grid'?' active':'');
-  document.getElementById('listViewBtn').className = 'view-btn' + (v==='list'?' active':'');
-  if (!silent) { renderFiltered(); dbSavePreferences(); }
-}
-
-// Override filterLibrary to call renderFiltered
-const _filterLibrary = filterLibrary;
-filterLibrary = function() {
-  const q = document.getElementById('searchBox').value.toLowerCase();
-  const key = document.getElementById('keyFilter').value;
-  const diff = document.getElementById('diffFilter').value;
-  const genre = document.getElementById('genreFilter').value;
-  filteredLibrary = library.filter(s => {
-    const matchQ = !q || (s.title||'').toLowerCase().includes(q) || (s.artist||'').toLowerCase().includes(q) || (s.key||'').toLowerCase().includes(q);
-    const matchKey = !key || s.key === key;
-    const matchDiff = !diff || s.difficulty === diff;
-    const matchGenre = !genre || s.genre === genre;
-    return matchQ && matchKey && matchDiff && matchGenre;
-  });
-  renderFiltered();
-  updateStats();
-};
-
-// ── DEMO DATA ─────────────────────────────────────────────────────────────────
-function loadDemoData() {
-  if (library.length) return;
-  library = [
-    { id:1, title:"Wonderwall", artist:"Oasis", key:"F#", mode:"minor", chords:["F#m","A","Dsus2","E","G","Bm","F#m7"], difficulty:"Easy", genre:"Rock", notes:"Classic Britpop — uses capo 2 with Em/G/D/A/C shapes. Great for beginners.", fileName:"wonderwall.pdf", source:"demo" },
-    { id:2, title:"Hotel California", artist:"Eagles", key:"B", mode:"minor", chords:["Bm","F#","A","E","G","D","Em","F#"], difficulty:"Medium", genre:"Rock", notes:"One of the most iconic progressions in rock. The i–V–VII–IV pattern in B minor.", fileName:"hotel_california.pdf", source:"demo" },
-    { id:3, title:"Autumn Leaves", artist:"Traditional Jazz", key:"G", mode:"major", chords:["Am7","D7","Gmaj7","Cmaj7","F#m7b5","B7","Em"], difficulty:"Hard", genre:"Jazz", notes:"ii–V–I cycle through two keys. Essential jazz standard for any guitarist.", fileName:"autumn_leaves.pdf", source:"demo" },
-    { id:4, title:"Hallelujah", artist:"Leonard Cohen", key:"C", mode:"major", chords:["C","Am","F","G","E7"], difficulty:"Easy", genre:"Folk", notes:"Simple I–vi–IV–V with a borrowed E7 for colour. Beautiful chord movement.", fileName:"hallelujah.pdf", source:"demo" },
-    { id:5, title:"Blackbird", artist:"The Beatles", key:"G", mode:"major", chords:["G","Am7","G/B","C","A7/C#","D","B7/D#","Em","Cm","G/D","Dm6","E7"], difficulty:"Hard", genre:"Folk", notes:"Fingerpicking pattern with chromatic bass movement. One of McCartney's finest.", fileName:"blackbird.pdf", source:"demo" },
-    { id:6, title:"Wish You Were Here", artist:"Pink Floyd", key:"G", mode:"major", chords:["Em7","G","Am7","Em","C","D","G"], difficulty:"Easy", genre:"Rock", notes:"Iconic intro riff in G major. The chord progression is deceptively simple.", fileName:"wish_you_were_here.pdf", source:"demo" },
-  ];
-  saveLibrary();
-  renderLibrary();
-  updateStats();
-}
-
-// ── START ─────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() { init(); });
-
-
-function toggleLibTheme() {
-  const html = document.documentElement;
-  const isOpen = html.getAttribute('data-theme') === 'open';
-  html.setAttribute('data-theme', isOpen ? 'dark' : 'open');
-  document.getElementById('libThemeLabel').textContent = isOpen ? 'Studio Dark' : 'Open Stage';
-  localStorage.setItem('gxTheme', isOpen ? 'dark' : 'open');
-}
-
-// Restore saved theme
-(function() {
-  const saved = localStorage.getItem('gxTheme');
-  if (saved === 'open') {
-    document.documentElement.setAttribute('data-theme', 'open');
-    const lbl = document.getElementById('libThemeLabel');
-    if (lbl) lbl.textContent = 'Open Stage';
-  }
-})();
-window.toggleLibTheme = toggleLibTheme;
-window.signInWithGoogle = signInWithGoogle;
-window.openLocalFilePicker = openLocalFilePicker;
-window.openLinkedFile = openLinkedFile;
-window.removeLinkedFile = removeLinkedFile;
-window.initFileUpload = initFileUpload;
-window.loadAddFile = loadAddFile;
-window.resetAdd = resetAdd;
-window.analyseAndAdd = analyseAndAdd;
-window.setSongView = setSongView;
-window.attachSheet = attachSheet;
-window.viewFullSheet = viewFullSheet;
-// Expose all functions to global scope for Safari
 // ── FILE UPLOAD ───────────────────────────────────────────────────────────────
 function initFileUpload() {
   const zone = document.getElementById('uploadZone');
