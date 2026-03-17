@@ -692,6 +692,32 @@
 </style>
 
 <script>
+// Capture OAuth token IMMEDIATELY before anything else
+(function() {
+  try {
+    var h = window.location.hash;
+    if (h && h.indexOf('access_token') > -1) {
+      var p = {};
+      h.substring(1).split('&').forEach(function(pair) {
+        var kv = pair.split('=');
+        p[decodeURIComponent(kv[0])] = decodeURIComponent(kv.slice(1).join('='));
+      });
+      if (p.access_token && p.refresh_token) {
+        var d = JSON.stringify({
+          access_token: p.access_token,
+          refresh_token: p.refresh_token,
+          expires_at: p.expires_at ? parseInt(p.expires_at) : Math.floor(Date.now()/1000)+3600,
+          token_type: 'bearer', user: null
+        });
+        localStorage.setItem('sb-wmxxomiuzdhmvysefrjg-auth-token', d);
+        localStorage.setItem('guitar-explorer-auth', d);
+        window.__oauthCaptured = true;
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    }
+  } catch(e) {}
+})();
+
 // Safari onclick safety stubs - replaced by full definitions when script loads
 var _safariStubs = ['initFileUpload','loadAddFile','resetAdd','analyseAndAdd','showAddModal','switchAddTab','showScanModal','connectDrive','toggleLibTheme','setSongView','attachSheet','viewFullSheet','signInWithGoogle','openLocalFilePicker','openLinkedFile','removeLinkedFile',
   'showSetCreateModal','showSet','showAllSongs','showSong','deleteSong','cycleProgress',
@@ -1665,19 +1691,34 @@ async function init() {
     // Check if this is an OAuth callback (URL has access_token in hash)
     const hash = window.location.hash;
     if (hash && hash.includes('access_token')) {
-      // Parse the token from hash and set session manually
       const params = new URLSearchParams(hash.substring(1));
       const accessToken = params.get('access_token');
       const refreshToken = params.get('refresh_token');
-      if (accessToken && refreshToken) {
-        await sb.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-      }
-      // Clear hash from URL
+      // Clear hash from URL immediately
       window.history.replaceState(null, '', window.location.pathname);
+      if (accessToken) {
+        const { data, error } = await sb.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || ''
+        });
+        console.log('setSession result:', data?.session?.user?.email, error);
+        if (data?.session?.user) {
+          currentUser = data.session.user;
+          updateAuthBar(currentUser);
+          await syncFromSupabase();
+          renderSidebar(); renderLibrary(); updateStats();
+          // Register auth listener and exit
+          sb.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_OUT') { currentUser = null; updateAuthBar(null); }
+          });
+          return;
+        }
+      }
     }
 
-    // Now get session
+    // Normal session check (returning user)
     const { data: { session } } = await sb.auth.getSession();
+    console.log('getSession result:', session?.user?.email);
     if (session?.user) {
       currentUser = session.user;
       updateAuthBar(currentUser);
@@ -2414,6 +2455,8 @@ window.switchAddTab = typeof switchAddTab !== "undefined" ? switchAddTab : funct
 window.toggleSongInSet = typeof toggleSongInSet !== "undefined" ? toggleSongInSet : function(){};
 window.deleteSet = typeof deleteSet !== "undefined" ? deleteSet : function(){};
 window.removeFromSet = typeof removeFromSet !== "undefined" ? removeFromSet : function(){};
+
+document.addEventListener('DOMContentLoaded', function() { init(); });
 </script>
 </body>
 </html>
