@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Signing in...</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<p style="font-family:monospace;padding:2rem">Signing in...</p>
+<script>
+const SUPABASE_URL = 'https://wmxxomiuzdhmvysefrjg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_oMyje3R_YGvTETd1qtLTCg_KC314Teu';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,
+    storageKey: 'guitar-explorer-auth',
+    storage: window.localStorage,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'implicit'
+  }
+});
+
+async function handleCallback() {
+  // The hash contains the token - read it before anything else
+  const hash = window.location.hash;
+  const query = window.location.search;
+
+  console.log('Callback hash length:', hash.length);
+  console.log('Callback query:', query);
+
+  // Try to get session - Supabase should auto-detect from hash
+  const { data: { session }, error } = await sb.auth.getSession();
+  console.log('Session:', session?.user?.email, error);
+
+  if (session?.user) {
+    // Session established - redirect to library
+    window.location.href = '/chord-library.html';
+  } else if (hash.includes('access_token')) {
+    // Manually parse and set session
+    const params = new URLSearchParams(hash.substring(1));
+    const accessToken = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
+    if (accessToken) {
+      const { data, error: setErr } = await sb.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken || ''
+      });
+      console.log('setSession:', data?.session?.user?.email, setErr);
+      window.location.href = '/chord-library.html';
+    } else {
+      window.location.href = '/chord-library.html';
+    }
+  } else {
+    // No token found - go back to library anyway
+    window.location.href = '/chord-library.html';
+  }
+}
+
+handleCallback();
+</script>
+</body>
+</html>
