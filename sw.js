@@ -1,8 +1,5 @@
-const CACHE = 'guitar-explorer-v2';
+const CACHE = 'guitar-explorer-v3';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/chord-library.html',
   '/manifest.json'
 ];
 
@@ -30,15 +27,23 @@ self.addEventListener('activate', function(e) {
 self.addEventListener('fetch', function(e) {
   var url = new URL(e.request.url);
 
+  // NEVER intercept navigation requests — let them pass through unchanged
+  // This is critical for OAuth callbacks which carry tokens in the URL hash
+  if (e.request.mode === 'navigate') {
+    return;
+  }
+
   // Always use network for API calls
   if (url.hostname.indexOf('supabase') > -1 ||
       url.hostname.indexOf('workers.dev') > -1 ||
       url.hostname.indexOf('anthropic') > -1 ||
       url.hostname.indexOf('googleapis') > -1 ||
-      url.hostname.indexOf('fonts.g') > -1) {
+      url.hostname.indexOf('fonts.g') > -1 ||
+      url.hostname.indexOf('google') > -1) {
     return;
   }
 
+  // Cache static assets only
   e.respondWith(
     caches.match(e.request).then(function(cached) {
       if (cached) return cached;
@@ -50,10 +55,6 @@ self.addEventListener('fetch', function(e) {
           });
         }
         return response;
-      }).catch(function() {
-        if (e.request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
       });
     })
   );
