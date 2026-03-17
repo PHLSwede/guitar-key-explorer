@@ -2481,7 +2481,48 @@ function loadDemoData() {
 }
 
 // ── START ─────────────────────────────────────────────────────────────────────
-init();
+document.addEventListener('DOMContentLoaded', function() { init(); });
+
+// Expose all functions to global scope for Safari
+window.analyseAndAdd = typeof analyseAndAdd !== "undefined" ? analyseAndAdd : function(){};
+window.cancelScan = typeof cancelScan !== "undefined" ? cancelScan : function(){};
+window.clearLibrary = typeof clearLibrary !== "undefined" ? clearLibrary : function(){};
+window.closeAddModal = typeof closeAddModal !== "undefined" ? closeAddModal : function(){};
+window.closeAddToSetModal = typeof closeAddToSetModal !== "undefined" ? closeAddToSetModal : function(){};
+window.closeScanModal = typeof closeScanModal !== "undefined" ? closeScanModal : function(){};
+window.closeSetCreateModal = typeof closeSetCreateModal !== "undefined" ? closeSetCreateModal : function(){};
+window.closeSongModal = typeof closeSongModal !== "undefined" ? closeSongModal : function(){};
+window.confirmAddUrl = typeof confirmAddUrl !== "undefined" ? confirmAddUrl : function(){};
+window.connectDrive = typeof connectDrive !== "undefined" ? connectDrive : function(){};
+window.createSet = typeof createSet !== "undefined" ? createSet : function(){};
+window.cycleProgress = typeof cycleProgress !== "undefined" ? cycleProgress : function(){};
+window.deleteSong = typeof deleteSong !== "undefined" ? deleteSong : function(){};
+window.fetchAndAnalyseUrl = typeof fetchAndAnalyseUrl !== "undefined" ? fetchAndAnalyseUrl : function(){};
+window.fetchSearchResult = typeof fetchSearchResult !== "undefined" ? fetchSearchResult : function(){};
+window.openInExplorer = typeof openInExplorer !== "undefined" ? openInExplorer : function(){};
+window.renameSet = typeof renameSet !== "undefined" ? renameSet : function(){};
+window.resetAdd = typeof resetAdd !== "undefined" ? resetAdd : function(){};
+window.searchTabs = typeof searchTabs !== "undefined" ? searchTabs : function(){};
+window.selectSetType = typeof selectSetType !== "undefined" ? selectSetType : function(){};
+window.sendMagicLink = typeof sendMagicLink !== "undefined" ? sendMagicLink : function(){};
+window.setSetEmoji = typeof setSetEmoji !== "undefined" ? setSetEmoji : function(){};
+window.setUrlPrefix = typeof setUrlPrefix !== "undefined" ? setUrlPrefix : function(){};
+window.setView = typeof setView !== "undefined" ? setView : function(){};
+window.showAddModal = typeof showAddModal !== "undefined" ? showAddModal : function(){};
+window.showAddToSetFromLibrary = typeof showAddToSetFromLibrary !== "undefined" ? showAddToSetFromLibrary : function(){};
+window.showAllSongs = typeof showAllSongs !== "undefined" ? showAllSongs : function(){};
+window.showLoginModal = typeof showLoginModal !== "undefined" ? showLoginModal : function(){};
+window.showScanModal = typeof showScanModal !== "undefined" ? showScanModal : function(){};
+window.showSet = typeof showSet !== "undefined" ? showSet : function(){};
+window.showSetCreateModal = typeof showSetCreateModal !== "undefined" ? showSetCreateModal : function(){};
+window.showSong = typeof showSong !== "undefined" ? showSong : function(){};
+window.signOut = typeof signOut !== "undefined" ? signOut : function(){};
+window.skipLogin = typeof skipLogin !== "undefined" ? skipLogin : function(){};
+window.startScan = typeof startScan !== "undefined" ? startScan : function(){};
+window.switchAddTab = typeof switchAddTab !== "undefined" ? switchAddTab : function(){};
+window.toggleSongInSet = typeof toggleSongInSet !== "undefined" ? toggleSongInSet : function(){};
+window.deleteSet = typeof deleteSet !== "undefined" ? deleteSet : function(){};
+window.removeFromSet = typeof removeFromSet !== "undefined" ? removeFromSet : function(){};
 </script>
 </body>
 </html>
