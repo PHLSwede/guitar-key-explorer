@@ -1006,7 +1006,8 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
     storageKey: 'guitar-explorer-auth',
     storage: window.localStorage,
     autoRefreshToken: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    flowType: 'implicit'
   }
 });
 let currentUser = null;
@@ -1665,9 +1666,10 @@ async function init() {
   // then check session — this catches Google OAuth redirects
   try {
     // Small delay to let Supabase process the URL hash from OAuth redirect
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-    const { data: { session } } = await sb.auth.getSession();
+    const { data: { session }, error } = await sb.auth.getSession();
+    console.log('Session check:', session?.user?.email, error);
     if (session?.user) {
       currentUser = session.user;
       updateAuthBar(currentUser);
