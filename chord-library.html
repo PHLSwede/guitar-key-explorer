@@ -1665,9 +1665,14 @@ async function init() {
     // Check if this is an OAuth callback (URL has access_token in hash)
     const hash = window.location.hash;
     if (hash && hash.includes('access_token')) {
-      // Let Supabase process the hash
-      await new Promise(resolve => setTimeout(resolve, 800));
-      // Clear the hash from URL without reload
+      // Parse the token from hash and set session manually
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      if (accessToken && refreshToken) {
+        await sb.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      }
+      // Clear hash from URL
       window.history.replaceState(null, '', window.location.pathname);
     }
 
