@@ -1648,19 +1648,15 @@ async function init() {
   renderSidebar();
   renderLibrary();
   updateStats();
-  updateAuthBar(null);
   loadDemoData();
+
+  // Show minimal auth bar while checking session
+  const bar = document.getElementById('authBarContent');
+  if (bar) bar.innerHTML = '<span style="color:var(--muted);font-size:0.65rem">Checking session…</span>';
 
   // 2. Try Supabase in background — don't block the UI
   try {
-    const { data: { session } } = await sb.auth.getSession();
-    if (session?.user) {
-      currentUser = session.user;
-      updateAuthBar(currentUser);
-      await syncFromSupabase();
-      renderSidebar(); renderLibrary(); updateStats();
-    }
-    // Listen for auth changes (magic link clicks)
+    // onAuthStateChange fires immediately with current session — use it as primary
     sb.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         currentUser = session.user;
@@ -1670,11 +1666,31 @@ async function init() {
       } else if (event === 'SIGNED_OUT') {
         currentUser = null;
         updateAuthBar(null);
+      } else if (event === 'INITIAL_SESSION') {
+        if (session?.user) {
+          currentUser = session.user;
+          updateAuthBar(currentUser);
+          await syncFromSupabase();
+          renderSidebar(); renderLibrary(); updateStats();
+        } else {
+          updateAuthBar(null);
+        }
       }
     });
+
+    // Also check session directly as fallback
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user && !currentUser) {
+      currentUser = session.user;
+      updateAuthBar(currentUser);
+      await syncFromSupabase();
+      renderSidebar(); renderLibrary(); updateStats();
+    } else if (!session?.user && !currentUser) {
+      updateAuthBar(null);
+    }
   } catch(e) {
-    // Supabase unavailable — guest mode only, that's fine
     console.log('Running in guest mode:', e.message);
+    updateAuthBar(null);
   }
 }
 
