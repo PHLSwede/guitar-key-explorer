@@ -36,7 +36,7 @@ async function handleCallback() {
 
   if (session?.user) {
     // Session established - redirect to library
-    window.location.href = '/chord-library.html';
+    window.location.href = 'https://guitar-explorer.com/chord-library.html';
   } else if (hash.includes('access_token')) {
     // Manually parse and set session
     const params = new URLSearchParams(hash.substring(1));
@@ -48,13 +48,13 @@ async function handleCallback() {
         refresh_token: refreshToken || ''
       });
       console.log('setSession:', data?.session?.user?.email, setErr);
-      window.location.href = '/chord-library.html';
+      window.location.href = 'https://guitar-explorer.com/chord-library.html';
     } else {
-      window.location.href = '/chord-library.html';
+      window.location.href = 'https://guitar-explorer.com/chord-library.html';
     }
   } else {
     // No token found - go back to library anyway
-    window.location.href = '/chord-library.html';
+    window.location.href = 'https://guitar-explorer.com/chord-library.html';
   }
 }
 
