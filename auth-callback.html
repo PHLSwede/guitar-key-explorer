@@ -58,7 +58,7 @@ async function handleCallback() {
         log('Going to library...', 'ok');
         setTimeout(function() {
           window.location.replace('https://guitar-explorer.com/chord-library.html');
-        }, 1500);
+        }, 10000);
         return;
       }
     } catch(e) {
@@ -80,7 +80,7 @@ async function handleCallback() {
   log('Redirecting in 3s...');
   setTimeout(function() {
     window.location.replace('https://guitar-explorer.com/chord-library.html');
-  }, 3000);
+  }, 10000);
 }
 
 handleCallback();
