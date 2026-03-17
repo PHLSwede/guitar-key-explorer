@@ -693,7 +693,7 @@
 
 <script>
 // Safari onclick safety stubs - replaced by full definitions when script loads
-var _safariStubs = ['showAddModal','switchAddTab','showScanModal','connectDrive','toggleLibTheme','setSongView','attachSheet','viewFullSheet',
+var _safariStubs = ['showAddModal','switchAddTab','showScanModal','connectDrive','toggleLibTheme','setSongView','attachSheet','viewFullSheet','signInWithGoogle','openLocalFilePicker','openLinkedFile','removeLinkedFile',
   'showSetCreateModal','showSet','showAllSongs','showSong','deleteSong','cycleProgress',
   'closeAddModal','closeSetCreateModal','closeScanModal','closeSongModal','closeAddToSetModal',
   'createSet','deleteSet','renameSet','selectSetType','setSetEmoji','toggleSongInSet',
@@ -711,13 +711,17 @@ _safariStubs.forEach(function(fn) { window[fn] = function() { console.log('stub:
 <div class="auth-bar" id="authBar">
   <div id="authBarContent" style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;justify-content:flex-end">
     <span style="color:var(--muted);font-size:0.65rem">Sync across devices:</span>
-    <input type="email" id="loginEmail" placeholder="your@email.com"
-      style="background:var(--surface2);border:1px solid var(--surface3);border-radius:6px;padding:0.3rem 0.65rem;color:var(--text);font-family:'Space Mono',monospace;font-size:0.62rem;outline:none;width:180px"
+    <button onclick="signInWithGoogle()" style="display:inline-flex;align-items:center;gap:0.5rem;background:white;border:1px solid #dadce0;border-radius:6px;padding:0.3rem 0.75rem;font-size:0.65rem;font-family:'Space Mono',monospace;cursor:pointer;color:#3c4043;transition:all 0.15s" onmouseover="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.2)'" onmouseout="this.style.boxShadow='none'">
+      <svg width="14" height="14" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Sign in with Google
+    </button>
+    <span style="color:var(--muted);font-size:0.6rem">or</span>
+    <input type="email" id="loginEmail" placeholder="email for magic link"
+      style="background:var(--surface2);border:1px solid var(--surface3);border-radius:6px;padding:0.3rem 0.65rem;color:var(--text);font-family:'Space Mono',monospace;font-size:0.62rem;outline:none;width:160px"
       onkeydown="if(event.key==='Enter')sendMagicLink()">
-    <button class="btn btn-outline" id="loginBtn" onclick="sendMagicLink()" style="font-size:0.62rem;padding:0.3rem 0.75rem">Send Link →</button>
+    <button class="btn btn-outline" id="loginBtn" onclick="sendMagicLink()" style="font-size:0.62rem;padding:0.3rem 0.75rem">→</button>
     <div id="loginError" style="color:var(--red);font-size:0.62rem;display:none"></div>
     <div id="loginSuccess" style="color:var(--green);font-size:0.62rem;display:none">✓ Check your inbox</div>
-    <button style="background:none;border:none;color:var(--muted);font-size:0.6rem;cursor:pointer;font-family:'Space Mono',monospace" onclick="skipLogin()">skip</button>
   </div>
 </div>
 
@@ -726,7 +730,7 @@ _safariStubs.forEach(function(fn) { window[fn] = function() { console.log('stub:
   <div class="header-left">
     <h1>Chord Sheet Library</h1>
     <p>by Oskar Johansson · Upload · Import · Build Your Sets</p>
-    <p style="font-size:0.55rem;color:var(--muted);margin-top:0.15rem;letter-spacing:0.1em">v2.2 · 2026.03.17 03:41</p>
+    <p style="font-size:0.55rem;color:var(--muted);margin-top:0.15rem;letter-spacing:0.1em">v2.2 · 2026.03.17 12:29</p>
   </div>
   <div class="header-right">
     <a href="guitar-key-explorer.html" class="explorer-link">← Key Explorer</a>
@@ -771,14 +775,11 @@ _safariStubs.forEach(function(fn) { window[fn] = function() { console.log('stub:
   <div class="connect-panel" id="connectPanel">
     <div class="connect-icon">☁️</div>
     <div class="connect-info">
-      <h3>Connect your Google Drive</h3>
+
       <p>Link your Drive to scan a folder of chord sheets. The app will read each file using AI and build your library automatically.</p>
     </div>
     <div style="margin-left:auto;display:flex;flex-direction:column;gap:0.75rem;align-items:flex-end">
-      <div class="connect-status">
-        <span class="status-dot" id="statusDot"></span>
-        <span id="statusText">Not connected</span>
-      </div>
+      
       
       <div style="font-size:0.6rem;color:var(--muted);text-align:right">Or add files manually ↓</div>
     </div>
@@ -924,29 +925,6 @@ _safariStubs.forEach(function(fn) { window[fn] = function() { console.log('stub:
   </div>
 </div>
 
-<!-- SCAN MODAL -->
-<div class="modal-overlay" id="scanModal" onclick="closeScanModal()">
-  <div class="modal" onclick="event.stopPropagation()" style="max-width:500px">
-    <button class="modal-close" onclick="closeScanModal()">✕</button>
-    <div style="font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--gold-light);margin-bottom:0.25rem">Scan Google Drive</div>
-    <div style="font-size:0.62rem;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1.25rem">Select a folder to bulk-scan</div>
-    <div id="driveNotConnected" style="font-size:0.72rem;color:var(--muted);padding:1rem;background:var(--surface2);border-radius:8px;line-height:1.7">
-      Google Drive is not connected yet.<br>
-      Connect Drive first, then come back to scan a folder.<br><br>
-      <strong style="color:var(--text)">Note:</strong> You need a Google OAuth Client ID configured to use Drive integration.
-      <a href="https://console.cloud.google.com" target="_blank" style="color:var(--gold)">Set up in Google Cloud Console →</a>
-    </div>
-    <div id="driveConnected" style="display:none">
-      <div style="font-size:0.68rem;color:var(--muted);margin-bottom:0.75rem">Choose folder to scan:</div>
-      <div id="folderList" style="max-height:200px;overflow-y:auto;background:var(--surface2);border-radius:8px;padding:0.5rem"></div>
-      <div style="display:flex;gap:0.5rem;margin-top:1rem">
-        <button class="btn btn-primary" onclick="startScan()" id="startScanBtn">⟳ Start Scan</button>
-        <button class="btn btn-ghost" onclick="closeScanModal()">Cancel</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- PLAYLIST CREATE MODAL -->
 <div class="modal-overlay" id="setCreateModal" onclick="closeSetCreateModal()">
   <div class="modal" onclick="event.stopPropagation()" style="max-width:460px">
@@ -1015,7 +993,7 @@ const EXPLORER_URL = 'guitar-key-explorer.html';
 const STORAGE_KEY = 'chordLibrary_v1';
 const SETS_KEY = 'chordSets_v1';
 const PROGRESS_KEY = 'chordProgress_v1';
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID';
+const GOOGLE_CLIENT_ID = '541823164124-sf2rf2g7odhmtduqt54bvc00v375b321.apps.googleusercontent.com';
 const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
 const SUPABASE_URL = 'https://wmxxomiuzdhmvysefrjg.supabase.co';
@@ -1051,6 +1029,27 @@ function skipLogin() {
   authSkipped = true;
   hideLoginModal();
 }
+
+
+// ── GOOGLE OAUTH ──────────────────────────────────────────────────────────────
+async function signInWithGoogle() {
+  try {
+    const { data, error } = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.href,
+        queryParams: { access_type: 'offline', prompt: 'consent' }
+      }
+    });
+    if (error) throw error;
+    // Supabase redirects automatically
+  } catch(e) {
+    console.error('Google sign-in error:', e);
+    const err = document.getElementById('loginError');
+    if (err) { err.textContent = 'Google sign-in failed: ' + e.message; err.style.display = 'block'; }
+  }
+}
+// ── END GOOGLE OAUTH ──────────────────────────────────────────────────────────
 
 async function sendMagicLink() {
   const emailEl = document.getElementById('loginEmail');
@@ -1103,13 +1102,17 @@ function updateAuthBar(user) {
   } else {
     bar.innerHTML = `
       <span style="color:var(--muted);font-size:0.65rem">Sync across devices:</span>
-      <input type="email" id="loginEmail" placeholder="your@email.com"
-        style="background:var(--surface2);border:1px solid var(--surface3);border-radius:6px;padding:0.3rem 0.65rem;color:var(--text);font-family:'Space Mono',monospace;font-size:0.62rem;outline:none;width:180px"
+      <button onclick="signInWithGoogle()" style="display:inline-flex;align-items:center;gap:0.5rem;background:white;border:1px solid #dadce0;border-radius:6px;padding:0.3rem 0.75rem;font-size:0.65rem;font-family:'Space Mono',monospace;cursor:pointer;color:#3c4043">
+        <svg width="14" height="14" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Sign in with Google
+      </button>
+      <span style="color:var(--muted);font-size:0.6rem">or</span>
+      <input type="email" id="loginEmail" placeholder="email for magic link"
+        style="background:var(--surface2);border:1px solid var(--surface3);border-radius:6px;padding:0.3rem 0.65rem;color:var(--text);font-family:'Space Mono',monospace;font-size:0.62rem;outline:none;width:160px"
         onkeydown="if(event.key==='Enter')sendMagicLink()">
-      <button class="btn btn-outline" id="loginBtn" onclick="sendMagicLink()" style="font-size:0.62rem;padding:0.3rem 0.75rem">Send Link →</button>
+      <button class="btn btn-outline" id="loginBtn" onclick="sendMagicLink()" style="font-size:0.62rem;padding:0.3rem 0.75rem">→</button>
       <div id="loginError" style="color:var(--red);font-size:0.62rem;display:none"></div>
-      <div id="loginSuccess" style="color:var(--green);font-size:0.62rem;display:none">✓ Check your inbox</div>
-      <button style="background:none;border:none;color:var(--muted);font-size:0.6rem;cursor:pointer;font-family:'Space Mono',monospace" onclick="skipLogin()">skip</button>`;
+      <div id="loginSuccess" style="color:var(--green);font-size:0.62rem;display:none">✓ Check your inbox</div>`;
   }
 }
 
@@ -1639,44 +1642,40 @@ function initDragRow(el, songId) {
 
 
 async function init() {
-  // Load local data immediately for fast UI
+  // 1. Load local data + render immediately — app works as guest right away
   loadLocalData();
   initFileUpload();
   renderSidebar();
   renderLibrary();
   updateStats();
+  updateAuthBar(null);
+  loadDemoData();
 
-  const token = sessionStorage.getItem('driveToken');
-  if (token) { driveToken = token; setDriveConnected(true); }
-
-  // Check Supabase auth session
-  const { data: { session } } = await sb.auth.getSession();
-  if (session?.user) {
-    currentUser = session.user;
-    updateAuthBar(currentUser);
-    hideLoginModal();
-    await syncFromSupabase();
-    renderSidebar(); renderLibrary(); updateStats();
-  } else {
-    updateAuthBar(null);
-    if (!library.length) setTimeout(() => showLoginModal(), 1500);
-  }
-
-  // Handle magic link return + live auth changes
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session?.user) {
+  // 2. Try Supabase in background — don't block the UI
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) {
       currentUser = session.user;
       updateAuthBar(currentUser);
-      hideLoginModal();
       await syncFromSupabase();
       renderSidebar(); renderLibrary(); updateStats();
-    } else if (event === 'SIGNED_OUT') {
-      currentUser = null;
-      updateAuthBar(null);
     }
-  });
-
-  loadDemoData();
+    // Listen for auth changes (magic link clicks)
+    sb.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        currentUser = session.user;
+        updateAuthBar(currentUser);
+        await syncFromSupabase();
+        renderSidebar(); renderLibrary(); updateStats();
+      } else if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        updateAuthBar(null);
+      }
+    });
+  } catch(e) {
+    // Supabase unavailable — guest mode only, that's fine
+    console.log('Running in guest mode:', e.message);
+  }
 }
 
 async function clearLibrary() {
@@ -1987,461 +1986,6 @@ function showAddError(msg) {
 }
 
 
-function connectDrive() {
-  if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
-    alert('To use Google Drive, add your Google OAuth Client ID to the GOOGLE_CLIENT_ID constant in the code.\n\nGet one free at: console.cloud.google.com\n\nYou can still add files manually using the "+ Add File" button.');
-    return;
-  }
-
-  // Load Google Identity Services
-  if (!window.google?.accounts?.oauth2) {
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.onload = () => doOAuth();
-    document.head.appendChild(script);
-  } else {
-    doOAuth();
-  }
-}
-
-function doOAuth() {
-  const client = google.accounts.oauth2.initTokenClient({
-    client_id: GOOGLE_CLIENT_ID,
-    scope: GOOGLE_SCOPES,
-    callback: (response) => {
-      if (response.access_token) {
-        driveToken = response.access_token;
-        sessionStorage.setItem('driveToken', driveToken);
-        setDriveConnected(true);
-        loadDriveFolders();
-      }
-    }
-  });
-  client.requestAccessToken();
-}
-
-function setDriveConnected(connected) {
-  driveConnected = connected;
-  document.getElementById('statusDot').className = 'status-dot' + (connected ? ' connected' : '');
-  document.getElementById('statusText').textContent = connected ? 'Google Drive connected ✓' : 'Not connected';
-  // Drive connect button removed
-  document.getElementById('connectBtn').className = 'btn ' + (connected ? 'btn-ghost' : 'btn-primary');
-  document.getElementById('connectPanelBtn').textContent = connected ? 'Disconnect' : 'Connect Drive';
-  document.getElementById('driveNotConnected').style.display = connected ? 'none' : 'block';
-  document.getElementById('driveConnected').style.display = connected ? 'block' : 'none';
-}
-
-async function loadDriveFolders() {
-  if (!driveToken) return;
-  try {
-    const res = await fetch(
-      "https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.folder'&fields=files(id,name)&pageSize=20",
-      { headers: { Authorization: `Bearer ${driveToken}` } }
-    );
-    const data = await res.json();
-    const list = document.getElementById('folderList');
-    list.innerHTML = '';
-    (data.files || []).forEach(folder => {
-      const btn = document.createElement('div');
-      btn.style.cssText = 'padding:0.6rem 0.75rem;cursor:pointer;border-radius:6px;font-size:0.72rem;color:var(--text);display:flex;align-items:center;gap:0.5rem;transition:background 0.15s';
-      btn.innerHTML = `📁 ${folder.name}`;
-      btn.onclick = () => { document.querySelectorAll('#folderList div').forEach(d=>d.style.background=''); btn.style.background='var(--surface3)'; window._selectedFolderId = folder.id; window._selectedFolderName = folder.name; };
-      btn.onmouseover = () => { if(window._selectedFolderId !== folder.id) btn.style.background='rgba(255,255,255,0.04)'; };
-      btn.onmouseout = () => { if(window._selectedFolderId !== folder.id) btn.style.background=''; };
-      list.appendChild(btn);
-    });
-  } catch(e) {
-    document.getElementById('folderList').innerHTML = '<div style="font-size:0.68rem;color:var(--red);padding:0.5rem">Error loading folders. Token may have expired.</div>';
-  }
-}
-
-async function startScan() {
-  if (!window._selectedFolderId) { alert('Please select a folder first.'); return; }
-  closeScanModal();
-  scanCancelled = false;
-
-  const scanPanel = document.getElementById('scanPanel');
-  scanPanel.classList.add('active');
-  document.getElementById('scanFill').style.width = '0%';
-  document.getElementById('scanLog').innerHTML = '';
-
-  try {
-    // List files in folder
-    const res = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q='${window._selectedFolderId}'+in+parents&fields=files(id,name,mimeType)&pageSize=50`,
-      { headers: { Authorization: `Bearer ${driveToken}` } }
-    );
-    const data = await res.json();
-    const files = (data.files || []).filter(f =>
-      ['application/pdf','image/jpeg','image/png','image/webp',
-       'text/plain','application/vnd.google-apps.document'].includes(f.mimeType)
-    );
-
-    if (!files.length) {
-      logScan('No supported files found in folder.', 'error');
-      return;
-    }
-
-    document.getElementById('scanTitle').textContent = `Scanning ${files.length} files…`;
-
-    for (let i = 0; i < files.length; i++) {
-      if (scanCancelled) break;
-      const file = files[i];
-      logScan(`Processing: ${file.name}`, 'processing');
-      document.getElementById('scanFill').style.width = `${((i+1)/files.length)*100}%`;
-
-      try {
-        // Download file content
-        const contentRes = await fetch(
-          `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
-          { headers: { Authorization: `Bearer ${driveToken}` } }
-        );
-        const blob = await contentRes.blob();
-        const base64 = await blobToBase64(blob);
-        const mediaType = file.mimeType.startsWith('image') ? file.mimeType : 'image/jpeg';
-
-        // Analyse with AI
-        const song = await analyseFileData(base64, mediaType, file.name);
-        if (song && !song.error) {
-          song.id = Date.now() + i;
-          song.fileName = file.name;
-          song.source = 'gdrive';
-          library.push(song);
-          await dbAddSong(song);
-          renderLibrary();
-          updateStats();
-          logScan(`✓ ${song.title || file.name} — ${song.key} ${song.mode}`, 'done');
-        } else {
-          logScan(`✗ Could not read: ${file.name}`, 'error');
-        }
-      } catch(e) {
-        logScan(`✗ Error: ${file.name}`, 'error');
-      }
-
-      // Small delay between requests
-      await new Promise(r => setTimeout(r, 500));
-    }
-
-    document.getElementById('scanTitle').textContent = `Scan complete — ${library.length} songs in library`;
-    document.getElementById('scanFill').style.width = '100%';
-
-  } catch(e) {
-    logScan('Scan failed: ' + e.message, 'error');
-  }
-}
-
-function cancelScan() {
-  scanCancelled = true;
-  document.getElementById('scanPanel').classList.remove('active');
-}
-
-function logScan(msg, type='') {
-  const log = document.getElementById('scanLog');
-  const item = document.createElement('div');
-  item.className = 'scan-log-item ' + type;
-  item.textContent = msg;
-  log.appendChild(item);
-  log.scrollTop = log.scrollHeight;
-}
-
-// ── FILE UPLOAD ────────────────────────────────────────────────────────────────
-function initFileUpload() {
-  const zone = document.getElementById('uploadZone');
-  const input = document.getElementById('fileInput');
-
-  zone.addEventListener('click', () => input.click());
-  input.addEventListener('change', e => { if(e.target.files[0]) loadAddFile(e.target.files[0]); });
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-  zone.addEventListener('drop', e => {
-    e.preventDefault(); zone.classList.remove('drag-over');
-    if(e.dataTransfer.files[0]) loadAddFile(e.dataTransfer.files[0]);
-  });
-}
-
-function loadAddFile(file) {
-  addFileName = file.name;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const img = new Image();
-    img.onload = () => {
-      const MAX = 1200;
-      let w = img.width, h = img.height;
-      if(w > MAX || h > MAX) {
-        if(w > h) { h = Math.round(h*MAX/w); w = MAX; }
-        else { w = Math.round(w*MAX/h); h = MAX; }
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
-      ctx.drawImage(img, 0, 0, w, h);
-      addFileBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
-      addFileType = 'image/jpeg';
-      document.getElementById('uploadZone').style.display = 'none';
-      document.getElementById('addPreview').style.display = 'block';
-      document.getElementById('addFileName').textContent = '📄 ' + file.name;
-      document.getElementById('addError').style.display = 'none';
-    };
-    // For non-images, treat as document - send as base64
-    if (file.type.startsWith('image/') || file.type === 'application/pdf') {
-      img.src = ev.target.result;
-    } else {
-      // text/plain - send as text
-      addFileBase64 = btoa(unescape(encodeURIComponent(ev.target.result)));
-      addFileType = 'text/plain';
-      document.getElementById('uploadZone').style.display = 'none';
-      document.getElementById('addPreview').style.display = 'block';
-      document.getElementById('addFileName').textContent = '📄 ' + file.name;
-    }
-  };
-  if (file.type.startsWith('text')) reader.readAsText(file);
-  else reader.readAsDataURL(file);
-}
-
-function resetAdd() {
-  addFileBase64 = null;
-  document.getElementById('fileInput').value = '';
-  document.getElementById('uploadZone').style.display = 'flex';
-  document.getElementById('addPreview').style.display = 'none';
-  document.getElementById('addError').style.display = 'none';
-}
-
-async function analyseAndAdd() {
-  if (!addFileBase64) return;
-  document.getElementById('addLoading').style.display = 'flex';
-  document.getElementById('analyseBtn').disabled = true;
-  document.getElementById('addError').style.display = 'none';
-
-  try {
-    const song = await analyseFileData(addFileBase64, addFileType, addFileName);
-    if (song.error) throw new Error(song.error);
-    song.id = Date.now();
-    song.fileName = addFileName;
-    song.source = 'upload';
-    library.push(song);
-    await dbAddSong(song);
-    renderLibrary();
-    updateStats();
-    closeAddModal();
-    resetAdd();
-  } catch(e) {
-    const err = document.getElementById('addError');
-    err.style.display = 'block';
-    err.innerHTML = `<div style="color:var(--red);font-size:0.7rem;padding:0.75rem;background:rgba(224,120,120,0.05);border-left:3px solid var(--red);border-radius:0 6px 6px 0">⚠ ${e.message}</div>`;
-  } finally {
-    document.getElementById('addLoading').style.display = 'none';
-    document.getElementById('analyseBtn').disabled = false;
-  }
-}
-
-// ── AI ANALYSIS ───────────────────────────────────────────────────────────────
-async function analyseFileData(base64, mediaType, fileName) {
-  const prompt = `Analyse this chord sheet / music document. Extract all information you can see.
-
-Return ONLY valid JSON (no markdown, no explanation):
-{
-  "title": "Song Title",
-  "artist": "Artist Name",
-  "key": "C",
-  "mode": "major",
-  "chords": ["C", "Am", "F", "G"],
-  "difficulty": "Easy",
-  "genre": "Pop",
-  "bpm": null,
-  "notes": "Any useful observation about the song or chord progression"
-}
-
-Rules:
-- mode must be "major" or "minor"
-- key must use sharps: C# not Db, A# not Bb
-- difficulty: "Easy" (open chords, simple), "Medium" (some barre chords), "Hard" (complex, many barre chords)
-- genre: best guess — Pop, Rock, Blues, Jazz, Folk, Country, Classical, R&B, Other
-- If title not visible, guess from context or use filename: "${fileName}"
-- If unreadable: {"error": "Could not read this file"}`;
-
-  const messages = [{
-    role: 'user',
-    content: mediaType === 'text/plain'
-      ? [{ type: 'text', text: prompt + '\n\nFile content (text):\n' + atob(base64) }]
-      : [
-          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-          { type: 'text', text: prompt }
-        ]
-  }];
-
-  const response = await fetch(WORKER_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 800, messages })
-  });
-
-  if (!response.ok) throw new Error(`Worker error ${response.status}`);
-  const data = await response.json();
-  const raw = data.content?.find(b => b.type === 'text')?.text || '';
-  return JSON.parse(raw.replace(/```json|```/g, '').trim());
-}
-
-// ── HELPERS ──────────────────────────────────────────────────────────────────
-function blobToBase64(blob) {
-  return new Promise((res, rej) => {
-    const reader = new FileReader();
-    reader.onload = () => res(reader.result.split(',')[1]);
-    reader.onerror = rej;
-    reader.readAsDataURL(blob);
-  });
-}
-
-// ── RENDER LIBRARY ────────────────────────────────────────────────────────────
-function filterLibrary() {
-  const q = document.getElementById('searchBox').value.toLowerCase();
-  const key = document.getElementById('keyFilter').value;
-  const diff = document.getElementById('diffFilter').value;
-  const genre = document.getElementById('genreFilter').value;
-
-  // Base set: all songs or set songs (in order)
-  let base;
-  if (currentSetId) {
-    const p = sets.find(x=>x.id===currentSetId);
-    base = p ? p.songIds.map(id=>library.find(s=>s.id===id)).filter(Boolean) : [];
-  } else {
-    base = [...library];
-  }
-
-  filteredLibrary = base.filter(s => {
-    const matchQ = !q || (s.title||'').toLowerCase().includes(q) || (s.artist||'').toLowerCase().includes(q) || (s.key||'').toLowerCase().includes(q);
-    const matchKey = !key || s.key === key;
-    const matchDiff = !diff || s.difficulty === diff;
-    const matchGenre = !genre || s.genre === genre;
-    return matchQ && matchKey && matchDiff && matchGenre;
-  });
-
-  renderFiltered();
-  updateStats();
-}
-
-function renderLibrary() { filterLibrary(); }
-
-function renderFiltered() {
-  const container = document.getElementById('libraryContainer');
-
-  if (!library.length) {
-    container.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">🎸</div>
-      <h3>Your library is empty</h3>
-      <p>Connect Google Drive to scan a folder of chord sheets, or add individual files using the + Add File button.</p>
-      <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="showAddModal()">+ Add File</button>
-        <button class="btn btn-outline" onclick="connectDrive()">Connect Drive</button>
-      </div>
-    </div>`;
-    return;
-  }
-
-  if (currentSetId) {
-    const p = sets.find(x=>x.id===currentSetId);
-    if (p && !p.songIds.length) {
-      container.innerHTML = `<div class="empty-state">
-        <div class="empty-icon">${p.emoji||'🎵'}</div>
-        <h3>${p.name} is empty</h3>
-        <p>Add songs from your library by clicking the ⊕ button on any song card.</p>
-        <button class="btn btn-outline" onclick="showAllSongs()">Browse All Songs</button>
-      </div>`;
-      return;
-    }
-  }
-
-  if (!filteredLibrary.length) {
-    container.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">🔍</div><h3>No results</h3>
-      <p>Try adjusting your search or filters.</p>
-    </div>`;
-    return;
-  }
-
-  if (currentView === 'grid') renderGrid(container);
-  else renderList(container);
-}
-
-function renderGrid(container) {
-  container.innerHTML = `<div class="library-grid">${filteredLibrary.map(s => songCardHTML(s)).join('')}</div>`;
-}
-
-function renderList(container) {
-  const isSet = !!currentSetId;
-  container.innerHTML = `
-    <div class="list-header">
-      ${isSet?'<div></div>':''}
-      <div>Key</div><div>Song</div><div>Artist</div>
-      <div>Difficulty</div><div>Genre</div><div>Progress</div><div></div>
-    </div>
-    <div class="library-list" id="songList">${filteredLibrary.map(s => songRowHTML(s)).join('')}</div>`;
-
-  // Init drag on rows if in set
-  if (isSet) {
-    document.querySelectorAll('.song-row[data-id]').forEach(el => {
-      initDragRow(el, parseInt(el.dataset.id));
-    });
-  }
-}
-
-function songCardHTML(s) {
-  const chordTags = (s.chords||[]).slice(0,5).map(c=>`<span class="chord-tag">${c}</span>`).join('');
-  const more = (s.chords||[]).length > 5 ? `<span class="chord-tag">+${s.chords.length-5}</span>` : '';
-  const diffCls = s.difficulty==='Easy'?'diff-easy':s.difficulty==='Hard'?'diff-hard':'diff-medium';
-  const inCurrentSet = currentSetId && sets.find(p=>p.id===currentSetId)?.songIds.includes(s.id);
-  const hasSheet = !!(s.sheetUrl || s.sheetData);
-  return `<div class="song-card" id="scard-${s.id}">
-    <div class="song-card-actions">
-      <button class="icon-btn" onclick="event.stopPropagation();showAddToSetModal(${s.id})" title="Add to set">⊕</button>
-      <button class="icon-btn" onclick="event.stopPropagation();openInExplorer(${s.id})" title="Open in Key Explorer">🎸</button>
-      ${currentSetId?`<button class="icon-btn danger" onclick="event.stopPropagation();removeFromSet(${currentSetId},${s.id})" title="Remove from set">−</button>`:`<button class="icon-btn danger" onclick="event.stopPropagation();deleteSong(${s.id})" title="Delete">✕</button>`}
-    </div>
-    <div class="song-card-view-toggle">
-      <button class="song-card-view-btn active" onclick="event.stopPropagation();setSongView(${s.id},'aid',this)">Chord Aid</button>
-      <button class="song-card-view-btn" onclick="event.stopPropagation();setSongView(${s.id},'sheet',this)">${hasSheet?'Sheet':'+ Sheet'}</button>
-    </div>
-    <div class="song-card-key">${s.key||'?'}<span> ${s.mode||''}</span></div>
-    <div class="song-card-title" onclick="showSong(${s.id})">${s.title||'Unknown'}</div>
-    <div class="song-card-artist">${s.artist||'Unknown artist'}</div>
-    <div class="song-card-chords" id="scaid-${s.id}">${chordTags}${more}</div>
-    <div class="song-card-sheet" id="scsheet-${s.id}">
-      ${hasSheet
-        ? `<img src="${s.sheetData||s.sheetUrl}" alt="chord sheet" onclick="event.stopPropagation();viewFullSheet(${s.id})">`
-        : `<label class="sheet-upload-btn" onclick="event.stopPropagation()">
-            📎 Attach sheet
-            <input type="file" accept="image/*,.pdf" style="display:none" onchange="attachSheet(${s.id},this)">
-           </label>`
-      }
-    </div>
-    <div class="song-card-footer">
-      <span class="difficulty-badge ${diffCls}">${s.difficulty||'—'}</span>
-      ${progressBadgeHTML(s.id)}
-    </div>
-  </div>`;
-}
-
-function songRowHTML(s) {
-  const diffCls = s.difficulty==='Easy'?'diff-easy':s.difficulty==='Hard'?'diff-hard':'diff-medium';
-  const isSet = !!currentSetId;
-  return `<div class="song-row" data-id="${s.id}" onclick="showSong(${s.id})">
-    ${isSet?`<span class="drag-handle" onclick="event.stopPropagation()">⠿</span>`:''}
-    <div class="song-row-key">${s.key||'?'}</div>
-    <div><div class="song-row-title">${s.title||'Unknown'}</div><div class="song-row-artist">${s.artist||''}</div></div>
-    <div style="font-size:0.68rem;color:var(--muted)">${s.artist||'—'}</div>
-    <span class="difficulty-badge ${diffCls}">${s.difficulty||'—'}</span>
-    <div style="font-size:0.65rem;color:var(--muted)">${s.genre||'—'}</div>
-    <div onclick="event.stopPropagation()">${progressBadgeHTML(s.id)}</div>
-    <div class="song-row-actions">
-      <button class="icon-btn" onclick="event.stopPropagation();showAddToSetModal(${s.id})" title="Add to set">⊕</button>
-      <button class="icon-btn" onclick="event.stopPropagation();openInExplorer(${s.id})" title="Open in Explorer">🎸</button>
-      ${isSet?`<button class="icon-btn danger" onclick="event.stopPropagation();removeFromSet(${currentSetId},${s.id})" title="Remove">−</button>`:`<button class="icon-btn danger" onclick="event.stopPropagation();deleteSong(${s.id})" title="Delete">✕</button>`}
-    </div>
-  </div>`;
-}
-
-
-// ── STATS ────────────────────────────────────────────────────────────────────
 
 // ── SONG CARD VIEW TOGGLE ─────────────────────────────────────────────────────
 function setSongView(songId, view, btn) {
@@ -2578,7 +2122,7 @@ function showSong(id) {
     </div>
     ${s.notes?`<div style="font-size:0.7rem;color:var(--muted);background:var(--surface2);padding:0.75rem;border-radius:8px;line-height:1.7;margin-bottom:0.75rem">${s.notes}</div>`:''}
     <div class="modal-section-label">File</div>
-    <div style="font-size:0.68rem;color:var(--muted)">${s.fileName||'—'} · Added from ${s.source==='gdrive'?'Google Drive':'upload'}</div>
+    <div style="font-size:0.68rem;color:var(--muted)">${s.fileName||'—'} · Added ${s.source==='url'?'via URL':s.source==='upload'?'via upload':'manually'}</div>
     <div class="modal-actions">
       <button class="btn btn-primary" onclick="openInExplorer(${s.id})">🎸 Open in Key Explorer</button>
       <button class="btn btn-outline" onclick="closeSongModal();showAddToSetModal(${s.id})">⊕ Add to Set</button>
@@ -2609,8 +2153,61 @@ function openInExplorer(id) {
 }
 
 // ── MODALS ───────────────────────────────────────────────────────────────────
-function showAddModal() { document.getElementById('addModal').classList.add('open'); }
-function closeAddModal() { document.getElementById('addModal').classList.remove('open'); resetAdd(); }
+// ── LOCAL FILE LINKING ────────────────────────────────────────────────────────
+function openLocalFilePicker(songId) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*,.pdf,.txt';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const song = library.find(s => s.id === songId);
+      if (!song) return;
+      song.sheetData = ev.target.result;
+      song.sheetFileName = file.name;
+      song.sheetType = file.type;
+      saveLibrary();
+      renderLibrary();
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+function viewFullSheet(songId) {
+  const song = library.find(s => s.id === songId);
+  if (!song || !song.sheetData) return;
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem;cursor:pointer';
+  overlay.onclick = () => document.body.removeChild(overlay);
+  overlay.innerHTML = '<div style="max-width:90vw;max-height:90vh"><img src="' + song.sheetData + '" style="max-width:100%;max-height:85vh;border-radius:8px;object-fit:contain"><div style="text-align:center;margin-top:0.5rem;font-size:0.68rem;color:rgba(255,255,255,0.4)">Tap to close ' + (song.sheetFileName||'') + '</div></div>';
+  document.body.appendChild(overlay);
+}
+
+function removeLinkedFile(songId) {
+  const song = library.find(s => s.id === songId);
+  if (!song || !confirm('Remove linked file from this song?')) return;
+  delete song.sheetData;
+  delete song.sheetFileName;
+  delete song.sheetType;
+  saveLibrary();
+  renderLibrary();
+}
+// ── END LOCAL FILE LINKING ────────────────────────────────────────────────────
+
+function showAddModal() {
+  const m = document.getElementById('addModal');
+  if (m) { m.style.display = 'flex'; m.classList.add('open'); }
+  switchAddTab('file'); // default to file tab
+}
+function closeAddModal() {
+  const m = document.getElementById('addModal');
+  if (m) { m.style.display = ''; m.classList.remove('open'); }
+  resetAdd();
+}
+// closeAddModal defined above
 function showScanModal() {
   document.getElementById('scanModal').classList.add('open');
   if (driveConnected) loadDriveFolders();
@@ -2681,6 +2278,10 @@ function toggleLibTheme() {
   }
 })();
 window.toggleLibTheme = toggleLibTheme;
+window.signInWithGoogle = signInWithGoogle;
+window.openLocalFilePicker = openLocalFilePicker;
+window.openLinkedFile = openLinkedFile;
+window.removeLinkedFile = removeLinkedFile;
 window.setSongView = setSongView;
 window.attachSheet = attachSheet;
 window.viewFullSheet = viewFullSheet;
