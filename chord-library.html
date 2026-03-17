@@ -1037,12 +1037,11 @@ async function signInWithGoogle() {
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.href,
+        redirectTo: 'https://guitar-explorer.com/chord-library.html',
         queryParams: { access_type: 'offline', prompt: 'consent' }
       }
     });
     if (error) throw error;
-    // Supabase redirects automatically
   } catch(e) {
     console.error('Google sign-in error:', e);
     const err = document.getElementById('loginError');
