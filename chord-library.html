@@ -1072,8 +1072,7 @@ async function signInWithGoogle() {
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: 'https://guitar-explorer.com/chord-library.html',
-        queryParams: { access_type: 'offline', prompt: 'consent' }
+        redirectTo: 'https://guitar-explorer.com/chord-library.html'
       }
     });
     if (error) throw error;
