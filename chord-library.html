@@ -223,6 +223,60 @@
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 1rem;
   }
+
+  /* Song view toggle */
+  .song-card-view-toggle {
+    display:flex; gap:0; border:1px solid var(--surface3);
+    border-radius:4px; overflow:hidden; margin-bottom:0.4rem;
+  }
+  .song-card-view-btn {
+    flex:1; background:var(--surface2); border:none;
+    color:var(--muted); font-family:'Space Mono',monospace;
+    font-size:0.52rem; padding:0.2rem 0; cursor:pointer;
+    transition:all 0.12s; letter-spacing:0.05em;
+  }
+  .song-card-view-btn.active { background:var(--gold); color:var(--bg); }
+  .song-card-sheet {
+    display:none; margin-top:0.4rem;
+    background:var(--surface2); border-radius:4px;
+    padding:0.4rem; font-size:0.62rem; color:var(--muted);
+    text-align:center; min-height:60px;
+    align-items:center; justify-content:center; flex-direction:column; gap:0.3rem;
+  }
+  .song-card-sheet.visible { display:flex; }
+  .song-card-sheet img { max-width:100%; max-height:120px; border-radius:4px; object-fit:contain; }
+  .sheet-upload-btn {
+    background:none; border:1px dashed var(--surface3);
+    border-radius:4px; padding:0.3rem 0.6rem;
+    color:var(--muted); font-size:0.58rem; cursor:pointer;
+    transition:all 0.12s; font-family:'Space Mono',monospace;
+  }
+  .sheet-upload-btn:hover { border-color:var(--gold); color:var(--gold); }
+
+  /* Add song modal tabs */
+  .add-method-tabs { display:flex; gap:0; border-bottom:1px solid var(--surface3); margin-bottom:1rem; }
+  .add-method-tab {
+    flex:1; background:none; border:none; border-bottom:2px solid transparent;
+    color:var(--muted); font-family:'Space Mono',monospace;
+    font-size:0.65rem; padding:0.6rem 0.4rem; cursor:pointer;
+    transition:all 0.15s; text-align:center; letter-spacing:0.05em;
+  }
+  .add-method-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+  .add-method-panel { display:none; }
+  .add-method-panel.active { display:block; }
+
+  /* Search results */
+  .search-result-item {
+    display:flex; align-items:center; gap:0.75rem;
+    padding:0.6rem 0.75rem; background:var(--surface2);
+    border:1px solid var(--surface3); border-radius:6px;
+    margin-bottom:0.4rem; cursor:pointer; transition:all 0.12s;
+  }
+  .search-result-item:hover { border-color:var(--gold); }
+  .search-result-key { font-family:'Playfair Display',serif; font-size:1rem; color:var(--gold); width:28px; flex-shrink:0; }
+  .search-result-title { font-size:0.75rem; color:var(--text); font-weight:700; }
+  .search-result-artist { font-size:0.62rem; color:var(--muted); }
+  .search-result-source { font-size:0.55rem; color:var(--muted); margin-left:auto; flex-shrink:0; }
   .song-card {
     background: var(--surface); border: 1px solid var(--surface3);
     border-radius: 12px; padding: 1.1rem;
@@ -639,7 +693,7 @@
 
 <script>
 // Safari onclick safety stubs - replaced by full definitions when script loads
-var _safariStubs = ['showAddModal','switchAddTab','showScanModal','connectDrive','toggleLibTheme',
+var _safariStubs = ['showAddModal','switchAddTab','showScanModal','connectDrive','toggleLibTheme','setSongView','attachSheet','viewFullSheet',
   'showSetCreateModal','showSet','showAllSongs','showSong','deleteSong','cycleProgress',
   'closeAddModal','closeSetCreateModal','closeScanModal','closeSongModal','closeAddToSetModal',
   'createSet','deleteSet','renameSet','selectSetType','setSetEmoji','toggleSongInSet',
@@ -653,28 +707,17 @@ _safariStubs.forEach(function(fn) { window[fn] = function() { console.log('stub:
 <body>
 
 <!-- AUTH BAR -->
+<!-- INLINE AUTH BAR -->
 <div class="auth-bar" id="authBar">
-  <div id="authBarContent">
-    <span style="color:var(--muted)">Sign in to sync your library across devices</span>
-    <button class="btn btn-outline" style="font-size:0.65rem;padding:0.35rem 0.8rem" onclick="showLoginModal()">Sign In</button>
-  </div>
-</div>
-
-<!-- LOGIN MODAL -->
-<div class="login-modal-overlay" id="loginModal">
-  <div class="login-modal">
-    <div class="login-logo">🎸</div>
-    <div class="login-title">Guitar Explorer</div>
-    <div class="login-subtitle">Enter your email and we'll send you a magic link — no password needed. Your library syncs across all your devices.</div>
-    <input type="email" id="loginEmail" class="login-input" placeholder="your@email.com"
+  <div id="authBarContent" style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;justify-content:flex-end">
+    <span style="color:var(--muted);font-size:0.65rem">Sync across devices:</span>
+    <input type="email" id="loginEmail" placeholder="your@email.com"
+      style="background:var(--surface2);border:1px solid var(--surface3);border-radius:6px;padding:0.3rem 0.65rem;color:var(--text);font-family:'Space Mono',monospace;font-size:0.62rem;outline:none;width:180px"
       onkeydown="if(event.key==='Enter')sendMagicLink()">
-    <button class="login-btn" id="loginBtn" onclick="sendMagicLink()">Send Magic Link →</button>
-    <div class="login-error" id="loginError"></div>
-    <div class="login-success" id="loginSuccess">
-      ✓ Magic link sent! Check your inbox and click the link to sign in.<br>
-      <span style="color:var(--muted)">You can close this and come back after clicking the link.</span>
-    </div>
-    <button class="login-skip" onclick="skipLogin()">Continue without signing in</button>
+    <button class="btn btn-outline" id="loginBtn" onclick="sendMagicLink()" style="font-size:0.62rem;padding:0.3rem 0.75rem">Send Link →</button>
+    <div id="loginError" style="color:var(--red);font-size:0.62rem;display:none"></div>
+    <div id="loginSuccess" style="color:var(--green);font-size:0.62rem;display:none">✓ Check your inbox</div>
+    <button style="background:none;border:none;color:var(--muted);font-size:0.6rem;cursor:pointer;font-family:'Space Mono',monospace" onclick="skipLogin()">skip</button>
   </div>
 </div>
 
@@ -682,15 +725,14 @@ _safariStubs.forEach(function(fn) { window[fn] = function() { console.log('stub:
 <div class="header">
   <div class="header-left">
     <h1>Chord Sheet Library</h1>
-    <p>by Oskar Johansson · Scan · Analyse · Build Your Sets</p>
-    <p style="font-size:0.55rem;color:var(--muted);margin-top:0.15rem;letter-spacing:0.1em">v2.1 · 2026.03.17 01:29</p>
+    <p>by Oskar Johansson · Upload · Import · Build Your Sets</p>
+    <p style="font-size:0.55rem;color:var(--muted);margin-top:0.15rem;letter-spacing:0.1em">v2.2 · 2026.03.17 03:41</p>
   </div>
   <div class="header-right">
     <a href="guitar-key-explorer.html" class="explorer-link">← Key Explorer</a>
     <button class="btn btn-ghost" onclick="showAddModal();switchAddTab('file')">+ Add File</button>
     <button class="btn btn-ghost" onclick="showAddModal();switchAddTab('url')">🔗 Add Tab URL</button>
-    <button class="btn btn-outline" onclick="showScanModal()" id="scanBtn">⟳ Scan Drive</button>
-    <button class="btn btn-primary" id="connectBtn" onclick="connectDrive()">Connect Google Drive</button>
+
     <button class="theme-toggle" onclick="toggleLibTheme()" id="libThemeBtn">
       <div class="theme-toggle-track"><div class="theme-toggle-thumb"></div></div>
       <span id="libThemeLabel">Studio Dark</span>
@@ -737,7 +779,7 @@ _safariStubs.forEach(function(fn) { window[fn] = function() { console.log('stub:
         <span class="status-dot" id="statusDot"></span>
         <span id="statusText">Not connected</span>
       </div>
-      <button class="btn btn-outline" onclick="connectDrive()" id="connectPanelBtn">Connect Drive</button>
+      
       <div style="font-size:0.6rem;color:var(--muted);text-align:right">Or add files manually ↓</div>
     </div>
   </div>
@@ -1002,8 +1044,8 @@ let newSetType = 'custom';
 let _pendingSongForSet = null;
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
-function showLoginModal() { document.getElementById('loginModal').classList.add('open'); }
-function hideLoginModal() { document.getElementById('loginModal').classList.remove('open'); }
+function showLoginModal() { /* inline auth - no modal */ }
+function hideLoginModal() { /* inline auth - no modal */ }
 
 function skipLogin() {
   authSkipped = true;
@@ -1011,14 +1053,17 @@ function skipLogin() {
 }
 
 async function sendMagicLink() {
-  const email = document.getElementById('loginEmail').value.trim();
+  const emailEl = document.getElementById('loginEmail');
+  const email = emailEl ? emailEl.value.trim() : '';
   if (!email || !email.includes('@')) {
-    showLoginError('Please enter a valid email address.');
+    const err = document.getElementById('loginError');
+    if (err) { err.textContent = 'Enter a valid email'; err.style.display = 'block'; }
     return;
   }
   const btn = document.getElementById('loginBtn');
-  btn.disabled = true; btn.textContent = 'Sending…';
-  document.getElementById('loginError').style.display = 'none';
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  const errEl = document.getElementById('loginError');
+  if (errEl) errEl.style.display = 'none';
 
   try {
     const { error } = await sb.auth.signInWithOtp({
@@ -1026,11 +1071,14 @@ async function sendMagicLink() {
       options: { emailRedirectTo: window.location.href }
     });
     if (error) throw error;
-    document.getElementById('loginSuccess').style.display = 'block';
-    btn.textContent = '✓ Link Sent';
+    const ok = document.getElementById('loginSuccess');
+    if (ok) ok.style.display = 'block';
+    if (btn) btn.textContent = '✓ Sent';
+    if (emailEl) emailEl.style.display = 'none';
   } catch(e) {
-    showLoginError(e.message || 'Could not send link. Please try again.');
-    btn.disabled = false; btn.textContent = 'Send Magic Link →';
+    const err = document.getElementById('loginError');
+    if (err) { err.textContent = e.message || 'Could not send. Try again.'; err.style.display = 'block'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Send Link →'; }
   }
 }
 
@@ -1042,22 +1090,26 @@ function showLoginError(msg) {
 
 function updateAuthBar(user) {
   const bar = document.getElementById('authBarContent');
+  if (!bar) return;
   if (user) {
     const initial = (user.email || '?')[0].toUpperCase();
     const name = user.user_metadata?.display_name || user.email;
     bar.innerHTML = `
       <div style="display:flex;align-items:center;gap:0.6rem">
         <div class="auth-avatar">${initial}</div>
-        <span>Signed in as <strong>${name}</strong></span>
-        <span style="color:var(--surface3)">·</span>
+        <span style="font-size:0.65rem;color:var(--muted)">Signed in as <strong style="color:var(--gold)">${name}</strong></span>
         <button class="btn btn-ghost" style="font-size:0.6rem;padding:0.25rem 0.6rem" onclick="signOut()">Sign Out</button>
       </div>`;
-  } else if (authSkipped) {
-    bar.innerHTML = `<span style="color:var(--muted)">Not signed in — data saved locally only</span>
-      <button class="btn btn-outline" style="font-size:0.65rem;padding:0.35rem 0.8rem" onclick="showLoginModal()">Sign In</button>`;
   } else {
-    bar.innerHTML = `<span>Sign in to sync across devices</span>
-      <button class="btn btn-outline" style="font-size:0.65rem;padding:0.35rem 0.8rem" onclick="showLoginModal()">Sign In</button>`;
+    bar.innerHTML = `
+      <span style="color:var(--muted);font-size:0.65rem">Sync across devices:</span>
+      <input type="email" id="loginEmail" placeholder="your@email.com"
+        style="background:var(--surface2);border:1px solid var(--surface3);border-radius:6px;padding:0.3rem 0.65rem;color:var(--text);font-family:'Space Mono',monospace;font-size:0.62rem;outline:none;width:180px"
+        onkeydown="if(event.key==='Enter')sendMagicLink()">
+      <button class="btn btn-outline" id="loginBtn" onclick="sendMagicLink()" style="font-size:0.62rem;padding:0.3rem 0.75rem">Send Link →</button>
+      <div id="loginError" style="color:var(--red);font-size:0.62rem;display:none"></div>
+      <div id="loginSuccess" style="color:var(--green);font-size:0.62rem;display:none">✓ Check your inbox</div>
+      <button style="background:none;border:none;color:var(--muted);font-size:0.6rem;cursor:pointer;font-family:'Space Mono',monospace" onclick="skipLogin()">skip</button>`;
   }
 }
 
@@ -1972,7 +2024,7 @@ function setDriveConnected(connected) {
   driveConnected = connected;
   document.getElementById('statusDot').className = 'status-dot' + (connected ? ' connected' : '');
   document.getElementById('statusText').textContent = connected ? 'Google Drive connected ✓' : 'Not connected';
-  document.getElementById('connectBtn').textContent = connected ? '✓ Drive Connected' : 'Connect Google Drive';
+  // Drive connect button removed
   document.getElementById('connectBtn').className = 'btn ' + (connected ? 'btn-ghost' : 'btn-primary');
   document.getElementById('connectPanelBtn').textContent = connected ? 'Disconnect' : 'Connect Drive';
   document.getElementById('driveNotConnected').style.display = connected ? 'none' : 'block';
@@ -2338,16 +2390,30 @@ function songCardHTML(s) {
   const more = (s.chords||[]).length > 5 ? `<span class="chord-tag">+${s.chords.length-5}</span>` : '';
   const diffCls = s.difficulty==='Easy'?'diff-easy':s.difficulty==='Hard'?'diff-hard':'diff-medium';
   const inCurrentSet = currentSetId && sets.find(p=>p.id===currentSetId)?.songIds.includes(s.id);
-  return `<div class="song-card" onclick="showSong(${s.id})">
+  const hasSheet = !!(s.sheetUrl || s.sheetData);
+  return `<div class="song-card" id="scard-${s.id}">
     <div class="song-card-actions">
       <button class="icon-btn" onclick="event.stopPropagation();showAddToSetModal(${s.id})" title="Add to set">⊕</button>
       <button class="icon-btn" onclick="event.stopPropagation();openInExplorer(${s.id})" title="Open in Key Explorer">🎸</button>
       ${currentSetId?`<button class="icon-btn danger" onclick="event.stopPropagation();removeFromSet(${currentSetId},${s.id})" title="Remove from set">−</button>`:`<button class="icon-btn danger" onclick="event.stopPropagation();deleteSong(${s.id})" title="Delete">✕</button>`}
     </div>
+    <div class="song-card-view-toggle">
+      <button class="song-card-view-btn active" onclick="event.stopPropagation();setSongView(${s.id},'aid',this)">Chord Aid</button>
+      <button class="song-card-view-btn" onclick="event.stopPropagation();setSongView(${s.id},'sheet',this)">${hasSheet?'Sheet':'+ Sheet'}</button>
+    </div>
     <div class="song-card-key">${s.key||'?'}<span> ${s.mode||''}</span></div>
-    <div class="song-card-title">${s.title||'Unknown'}</div>
+    <div class="song-card-title" onclick="showSong(${s.id})">${s.title||'Unknown'}</div>
     <div class="song-card-artist">${s.artist||'Unknown artist'}</div>
-    <div class="song-card-chords">${chordTags}${more}</div>
+    <div class="song-card-chords" id="scaid-${s.id}">${chordTags}${more}</div>
+    <div class="song-card-sheet" id="scsheet-${s.id}">
+      ${hasSheet
+        ? `<img src="${s.sheetData||s.sheetUrl}" alt="chord sheet" onclick="event.stopPropagation();viewFullSheet(${s.id})">`
+        : `<label class="sheet-upload-btn" onclick="event.stopPropagation()">
+            📎 Attach sheet
+            <input type="file" accept="image/*,.pdf" style="display:none" onchange="attachSheet(${s.id},this)">
+           </label>`
+      }
+    </div>
     <div class="song-card-footer">
       <span class="difficulty-badge ${diffCls}">${s.difficulty||'—'}</span>
       ${progressBadgeHTML(s.id)}
@@ -2376,6 +2442,61 @@ function songRowHTML(s) {
 
 
 // ── STATS ────────────────────────────────────────────────────────────────────
+
+// ── SONG CARD VIEW TOGGLE ─────────────────────────────────────────────────────
+function setSongView(songId, view, btn) {
+  const card = document.getElementById('scard-' + songId);
+  if (!card) return;
+  // Update toggle buttons
+  card.querySelectorAll('.song-card-view-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // Show/hide panels
+  const aid = document.getElementById('scaid-' + songId);
+  const sheet = document.getElementById('scsheet-' + songId);
+  if (view === 'aid') {
+    if (aid) aid.style.display = '';
+    if (sheet) sheet.classList.remove('visible');
+  } else {
+    if (aid) aid.style.display = 'none';
+    if (sheet) sheet.classList.add('visible');
+  }
+}
+
+async function attachSheet(songId, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const dataUrl = e.target.result;
+    // Save to song object
+    const song = library.find(s => s.id === songId);
+    if (song) {
+      song.sheetData = dataUrl;
+      song.sheetFileName = file.name;
+      await dbAddSong(song); // update in supabase
+      saveLibrary();
+      renderLibrary(); // re-render to show sheet
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function viewFullSheet(songId) {
+  const song = library.find(s => s.id === songId);
+  if (!song || (!song.sheetData && !song.sheetUrl)) return;
+  const src = song.sheetData || song.sheetUrl;
+  // Open in a simple overlay
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem';
+  overlay.onclick = () => document.body.removeChild(overlay);
+  overlay.innerHTML = `<div style="max-width:90vw;max-height:90vh;position:relative">
+    <img src="${src}" style="max-width:100%;max-height:85vh;border-radius:8px;object-fit:contain">
+    <div style="text-align:center;margin-top:0.5rem;font-size:0.68rem;color:rgba(255,255,255,0.5)">Tap anywhere to close</div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+// ── END SONG CARD VIEW TOGGLE ─────────────────────────────────────────────────
+
 function updateStats() {
   const bar = document.getElementById('statsBar');
   if (!library.length) { bar.innerHTML = ''; return; }
@@ -2560,6 +2681,9 @@ function toggleLibTheme() {
   }
 })();
 window.toggleLibTheme = toggleLibTheme;
+window.setSongView = setSongView;
+window.attachSheet = attachSheet;
+window.viewFullSheet = viewFullSheet;
 // Expose all functions to global scope for Safari
 window.analyseAndAdd = typeof analyseAndAdd !== "undefined" ? analyseAndAdd : function(){};
 window.cancelScan = typeof cancelScan !== "undefined" ? cancelScan : function(){};
