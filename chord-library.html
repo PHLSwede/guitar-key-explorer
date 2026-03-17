@@ -1000,7 +1000,15 @@ const SUPABASE_URL = 'https://wmxxomiuzdhmvysefrjg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oMyje3R_YGvTETd1qtLTCg_KC314Teu';
 
 // ── SUPABASE CLIENT ───────────────────────────────────────────────────────────
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,
+    storageKey: 'guitar-explorer-auth',
+    storage: window.localStorage,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+});
 let currentUser = null;
 let authSkipped = false;
 
@@ -1653,10 +1661,25 @@ async function init() {
   const bar = document.getElementById('authBarContent');
   if (bar) bar.innerHTML = '<span style="color:var(--muted);font-size:0.65rem">Checking session…</span>';
 
-  // 2. Try Supabase in background — don't block the UI
+  // 2. Let Supabase process any OAuth hash in URL first
+  // then check session — this catches Google OAuth redirects
   try {
-    // onAuthStateChange fires immediately with current session — use it as primary
+    // Small delay to let Supabase process the URL hash from OAuth redirect
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) {
+      currentUser = session.user;
+      updateAuthBar(currentUser);
+      await syncFromSupabase();
+      renderSidebar(); renderLibrary(); updateStats();
+    } else {
+      updateAuthBar(null);
+    }
+
+    // Listen for future auth changes
     sb.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event, session?.user?.email);
       if (event === 'SIGNED_IN' && session?.user) {
         currentUser = session.user;
         updateAuthBar(currentUser);
@@ -1665,28 +1688,12 @@ async function init() {
       } else if (event === 'SIGNED_OUT') {
         currentUser = null;
         updateAuthBar(null);
-      } else if (event === 'INITIAL_SESSION') {
-        if (session?.user) {
-          currentUser = session.user;
-          updateAuthBar(currentUser);
-          await syncFromSupabase();
-          renderSidebar(); renderLibrary(); updateStats();
-        } else {
-          updateAuthBar(null);
-        }
+      } else if (event === 'INITIAL_SESSION' && session?.user) {
+        currentUser = session.user;
+        updateAuthBar(currentUser);
       }
     });
 
-    // Also check session directly as fallback
-    const { data: { session } } = await sb.auth.getSession();
-    if (session?.user && !currentUser) {
-      currentUser = session.user;
-      updateAuthBar(currentUser);
-      await syncFromSupabase();
-      renderSidebar(); renderLibrary(); updateStats();
-    } else if (!session?.user && !currentUser) {
-      updateAuthBar(null);
-    }
   } catch(e) {
     console.log('Running in guest mode:', e.message);
     updateAuthBar(null);
