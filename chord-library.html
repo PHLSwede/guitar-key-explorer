@@ -881,7 +881,7 @@ _safariStubs.forEach(function(fn) { window[fn] = function() { console.log('stub:
     <!-- Mode tabs -->
     <div style="display:flex;gap:0;border:1px solid var(--surface3);border-radius:8px;overflow:hidden;margin-bottom:1.25rem">
       <button id="addTabUrl" onclick="switchAddTab('url')" style="flex:1;padding:0.5rem;background:var(--gold);color:var(--bg);border:none;font-family:'Space Mono',monospace;font-size:0.68rem;font-weight:700;cursor:pointer">🔗 Paste URL</button>
-      <button id="addTabSearch" onclick="switchAddTab('search')" style="flex:1;padding:0.5rem;background:var(--surface2);color:var(--muted);border:none;border-left:1px solid var(--surface3);font-family:'Space Mono',monospace;font-size:0.68rem;cursor:pointer">🔍 Search Song</button>
+      <button id="addTabSearch" onclick="switchAddTab('search')" style="flex:1;padding:0.5rem;background:var(--surface2);color:var(--muted);border:none;border-left:1px solid var(--surface3);font-family:'Space Mono',monospace;font-size:0.68rem;cursor:not-allowed;opacity:0.5" title="Coming soon">🔍 Search <span style="font-size:0.55rem;display:block;color:var(--muted)">coming soon</span></button>
       <button id="addTabFile" onclick="switchAddTab('file')" style="flex:1;padding:0.5rem;background:var(--surface2);color:var(--muted);border:none;border-left:1px solid var(--surface3);font-family:'Space Mono',monospace;font-size:0.68rem;cursor:pointer">📄 Upload File</button>
     </div>
 
@@ -915,19 +915,12 @@ _safariStubs.forEach(function(fn) { window[fn] = function() { console.log('stub:
 
     <!-- SEARCH TAB -->
     <div id="addPanelSearch" style="display:none">
-      <div style="font-size:0.65rem;color:var(--muted);margin-bottom:0.75rem;line-height:1.6">
-        Search by song name — finds the best match on Ultimate Guitar and extracts chord data automatically.
+      <div style="text-align:center;padding:2rem 1rem;color:var(--muted)">
+        <div style="font-size:2rem;margin-bottom:0.75rem">🔍</div>
+        <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--text);margin-bottom:0.4rem">Search by Song Name</div>
+        <div style="font-size:0.65rem;line-height:1.7">Coming soon — will search Ultimate Guitar and import chords automatically.<br>For now use <strong style="color:var(--gold)">Paste URL</strong> or <strong style="color:var(--gold)">Upload File</strong>.</div>
       </div>
-      <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem">
-        <input type="text" id="searchInput" placeholder="e.g. Wonderwall Oasis"
-          style="flex:1;background:var(--surface2);border:1px solid var(--surface3);border-radius:8px;padding:0.55rem 0.8rem;color:var(--text);font-family:'Space Mono',monospace;font-size:0.72rem;outline:none;min-width:0"
-          onkeydown="if(event.key==='Enter')searchTabs()">
-        <button class="btn btn-primary" onclick="searchTabs()" id="searchTabBtn">Search</button>
-      </div>
-      <div id="searchLoading" style="display:none;align-items:center;gap:0.75rem;margin-top:0.75rem;font-size:0.72rem;color:var(--muted)">
-        <div class="spinner"></div> Searching…
-      </div>
-      <div id="searchResults" style="margin-top:0.75rem"></div>
+      <div id="searchResults" style="display:none"></div>
     </div>
 
     <!-- FILE TAB -->
@@ -1714,28 +1707,28 @@ function songCardHTML(s) {
   const more = (s.chords||[]).length > 5 ? `<span class="chord-tag">+${s.chords.length-5}</span>` : '';
   const diffCls = s.difficulty==='Easy'?'diff-easy':s.difficulty==='Hard'?'diff-hard':'diff-medium';
   const hasSheet = !!(s.sheetData);
-  return `<div class="song-card" id="scard-${s.id}">
+  return `<div class="song-card" id="scard-${s.id}" onclick="showSong(${s.id})" style="cursor:pointer">
     <div class="song-card-actions">
       <button class="icon-btn" onclick="event.stopPropagation();showAddToSetModal(${s.id})" title="Add to set">⊕</button>
       <button class="icon-btn" onclick="event.stopPropagation();openInExplorer(${s.id})" title="Open in Key Explorer">🎸</button>
-      ${currentSetId?`<button class="icon-btn danger" onclick="event.stopPropagation();removeFromSet(${currentSetId},${s.id})" title="Remove">−</button>`:`<button class="icon-btn danger" onclick="event.stopPropagation();deleteSong(${s.id})" title="Delete">x</button>`}
+      ${currentSetId?`<button class="icon-btn danger" onclick="event.stopPropagation();removeFromSet(${currentSetId},${s.id})" title="Remove">−</button>`:`<button class="icon-btn danger" onclick="event.stopPropagation();deleteSong(${s.id})" title="Delete">✕</button>`}
     </div>
-    <div class="song-card-view-toggle">
-      <button class="song-card-view-btn active" onclick="event.stopPropagation();setSongView(${s.id},'aid',this)">Chord Aid</button>
-      <button class="song-card-view-btn" onclick="event.stopPropagation();setSongView(${s.id},'sheet',this)">${hasSheet?'Sheet':'+ Sheet'}</button>
+    <div class="song-card-view-toggle" onclick="event.stopPropagation()">
+      <button class="song-card-view-btn active" onclick="setSongView(${s.id},'aid',this)">Chord Aid</button>
+      <button class="song-card-view-btn" onclick="setSongView(${s.id},'sheet',this)">${hasSheet?'Sheet':'+ Sheet'}</button>
     </div>
     <div class="song-card-key">${s.key||'?'}<span> ${s.mode||''}</span></div>
-    <div class="song-card-title" onclick="showSong(${s.id})">${s.title||'Unknown'}</div>
+    <div class="song-card-title">${s.title||'Unknown'}</div>
     <div class="song-card-artist">${s.artist||'Unknown artist'}</div>
     <div class="song-card-chords" id="scaid-${s.id}">${chordTags}${more}</div>
-    <div class="song-card-sheet" id="scsheet-${s.id}">
+    <div class="song-card-sheet" id="scsheet-${s.id}" onclick="event.stopPropagation()">
       ${hasSheet
-        ? `<img src="${s.sheetData}" alt="sheet" style="max-width:100%;max-height:100px;border-radius:4px;object-fit:contain;cursor:pointer" onclick="event.stopPropagation();viewFullSheet(${s.id})"><button onclick="event.stopPropagation();removeLinkedFile(${s.id})" style="background:none;border:none;color:var(--muted);font-size:0.65rem;cursor:pointer;margin-top:0.2rem">x Remove</button>`
-        : `<button class="sheet-upload-btn" onclick="event.stopPropagation();openLocalFilePicker(${s.id})">📎 Link local file</button>`
+        ? `<img src="${s.sheetData}" alt="sheet" style="max-width:100%;max-height:100px;border-radius:4px;object-fit:contain;cursor:pointer" onclick="viewFullSheet(${s.id})"><button onclick="removeLinkedFile(${s.id})" style="background:none;border:none;color:var(--muted);font-size:0.65rem;cursor:pointer;margin-top:0.2rem">✕ Remove</button>`
+        : `<button class="sheet-upload-btn" onclick="openLocalFilePicker(${s.id})">📎 Link local file</button>`
       }
     </div>
-    <div class="song-card-footer">
-      <span class="difficulty-badge ${diffCls}">${s.difficulty||'-'}</span>
+    <div class="song-card-footer" onclick="event.stopPropagation()">
+      <span class="difficulty-badge ${diffCls}">${s.difficulty||'—'}</span>
       ${progressBadgeHTML(s.id)}
     </div>
   </div>`;
