@@ -12,7 +12,7 @@
 </style>
 </head>
 <body>
-<div id="log"><p>Starting...</p></div>
+<div id="log"><p>Signing in...</p></div>
 <script>
 var SUPABASE_URL = 'https://wmxxomiuzdhmvysefrjg.supabase.co';
 var SUPABASE_KEY = 'sb_publishable_oMyje3R_YGvTETd1qtLTCg_KC314Teu';
@@ -35,37 +35,43 @@ var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 async function handleCallback() {
   var hash = window.location.hash;
-  log('Hash: ' + (hash.length > 10 ? hash.substring(0,30)+'...' : 'empty'));
+  log('Processing sign-in...');
 
   if (hash && hash.includes('access_token')) {
-    log('Token found!', 'ok');
     var params = new URLSearchParams(hash.substring(1));
     var accessToken = params.get('access_token');
     var refreshToken = params.get('refresh_token') || '';
+    var providerToken = params.get('provider_token'); // Drive token
 
     try {
       var result = await sb.auth.setSession({
         access_token: accessToken,
         refresh_token: refreshToken
       });
-      
+
       if (result.error) {
         log('Error: ' + result.error.message, 'err');
       } else if (result.data && result.data.session) {
         log('Signed in as: ' + result.data.session.user.email, 'ok');
+
+        // Store Drive token separately for file picker
+        if (providerToken) {
+          localStorage.setItem('guitar-explorer-drive-token', providerToken);
+          log('Drive access granted ✓', 'ok');
+        }
+
         var stored = localStorage.getItem(STORAGE_KEY);
-        log('localStorage saved: ' + (stored ? 'YES' : 'NO'), stored ? 'ok' : 'err');
-        log('Going to library...', 'ok');
+        log('Session saved: ' + (stored ? 'YES' : 'NO'), stored ? 'ok' : 'err');
+        log('Redirecting to library...', 'ok');
         setTimeout(function() {
           window.location.replace('https://guitar-explorer.com/chord-library.html');
-        }, 10000);
+        }, 1000);
         return;
       }
     } catch(e) {
       log('Exception: ' + e.message, 'err');
     }
   } else {
-    log('No token - checking existing session...');
     try {
       var s = await sb.auth.getSession();
       if (s.data && s.data.session) {
@@ -74,13 +80,13 @@ async function handleCallback() {
         return;
       }
     } catch(e) {}
-    log('No session found', 'err');
+    log('No token found', 'err');
   }
 
   log('Redirecting in 3s...');
   setTimeout(function() {
     window.location.replace('https://guitar-explorer.com/chord-library.html');
-  }, 10000);
+  }, 3000);
 }
 
 handleCallback();
