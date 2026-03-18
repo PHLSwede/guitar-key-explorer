@@ -3023,8 +3023,6 @@ function resetImageUpload() {
 
 async function analyseImage() {
   if (!analyserImageBase64) return;
-  // Collapse preview to highlight loading + results
-  document.getElementById('analyserPreview').style.display = 'none';
 
   // Detect if running as local file  -  fetch won't work
   if (window.location.protocol === 'file:') {
@@ -3036,6 +3034,7 @@ async function analyseImage() {
   }
 
   document.getElementById('analyserLoading').style.display = 'flex';
+  document.getElementById('analyserPreview').style.display = 'none'; // collapse now that loading started
   document.getElementById('analyserResult').innerHTML = '';
   document.querySelectorAll('.analyser-analyse-btn').forEach(b => b.disabled = true);
 
