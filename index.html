@@ -2784,14 +2784,16 @@ function clearProgression() {
 }
 
 function parseChordString(ch) {
-  const m = ch.match(/^([A-G][#b]?)(.*)$/);
+  // Capitalise first letter so 'am' -> 'Am', 'c#m' -> 'C#m'
+  const normalised = ch.charAt(0).toUpperCase() + ch.slice(1);
+  const m = normalised.match(/^([A-G][#b]?)(.*)$/);
   if (!m) return null;
   let root = m[1].replace('Db','C#').replace('Eb','D#').replace('Gb','F#').replace('Ab','G#').replace('Bb','A#');
   const suffix = m[2].toLowerCase();
   let quality = 'maj';
   if (suffix.startsWith('m') && !suffix.startsWith('maj')) quality = 'min';
-  if (suffix.includes('\u00b0') || suffix.includes('dim')) quality = 'dim';
-  return { root, quality, display: ch };
+  if (suffix.includes('°') || suffix.includes('dim')) quality = 'dim';
+  return { root, quality, display: normalised };
 }
 
 function detectKey(parsedChords) {
