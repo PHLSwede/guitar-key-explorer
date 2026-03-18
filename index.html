@@ -979,12 +979,12 @@
           <span id="workerDot" style="width:8px;height:8px;border-radius:50%;background:var(--surface3);display:inline-block;flex-shrink:0"></span>
           <span id="workerMsg">Checking proxy…</span>
         </div>
-        <div id="uploadZone" class="upload-zone">
+        <label for="fileInput" id="uploadZone" class="upload-zone">
           <div class="upload-icon">📄</div>
           <p><strong>Click to upload</strong> or drag &amp; drop</p>
           <p>PNG, JPG — any chord sheet or tab image</p>
-        </div>
-        <input type="file" id="fileInput" style="display:none">
+        </label>
+        <input type="file" id="fileInput" accept="image/*" style="display:none">
         <div id="analyserPreview" style="display:none;margin-top:0.75rem">
           <div class="analyser-preview">
             <img id="previewImg" src="" alt="Uploaded sheet">
@@ -2964,10 +2964,8 @@ function initImageUpload() {
   const fileInput = document.getElementById('fileInput');
   const zone = document.getElementById('uploadZone');
 
-  // Click zone -> trigger file picker
-  zone.addEventListener('click', () => fileInput.click());
-
-  // File selected
+  // uploadZone is now a <label for="fileInput"> — iOS handles click natively
+  // Just bind the change event and drag/drop
   fileInput.addEventListener('change', (e) => {
     if (e.target.files && e.target.files[0]) loadImageFile(e.target.files[0]);
   });
