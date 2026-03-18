@@ -2427,8 +2427,14 @@ function initFileUpload() {
   const zone = document.getElementById('uploadZone');
   const input = document.getElementById('fileInput');
   if (!zone || !input) return;
-  zone.addEventListener('click', () => input.click());
-  input.addEventListener('change', e => { if (e.target.files[0]) loadAddFile(e.target.files[0]); });
+
+  // uploadZone is a <label for="fileInput"> so clicking it already opens picker
+  // Don't add another click listener — just handle the file change
+  input.addEventListener('change', e => {
+    if (e.target.files && e.target.files[0]) loadAddFile(e.target.files[0]);
+  });
+
+  // Drag and drop
   zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
   zone.addEventListener('drop', e => {
