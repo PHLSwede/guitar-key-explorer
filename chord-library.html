@@ -2580,6 +2580,11 @@ async function analyseFileData(base64, mediaType, fileName) {
     role: 'user',
     content: mediaType === 'text/plain'
       ? [{ type: 'text', text: prompt + '\n\nFile content:\n' + atob(base64) }]
+      : mediaType === 'application/pdf'
+      ? [
+          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
+          { type: 'text', text: prompt }
+        ]
       : [
           { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
           { type: 'text', text: prompt }
