@@ -2772,6 +2772,15 @@ function clearProgression() {
   document.querySelectorAll('.picker-root-btn').forEach(b => b.classList.remove('selected'));
   pickerSelectedRoot = null;
   document.getElementById('chordPickerQuality').style.opacity = '0.4';
+  // Restore collapsed input elements
+  ['chordPickerRoot','chordPickerQuality','chordChips'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = '';
+  });
+  const pickerLabel = document.querySelector('#tabManual > div:first-child');
+  if (pickerLabel) pickerLabel.style.display = '';
+  const typeLabel = document.querySelector('#tabManual > div:nth-child(3)');
+  if (typeLabel) typeLabel.style.display = '';
 }
 
 function parseChordString(ch) {
@@ -2856,6 +2865,24 @@ function analyseProgression() {
         '<div><div class="prog-inv-label">2nd inv</div>' + chordDiagramSVG(voicing.inv2, 72) + '</div>' +
       '</div></div>';
   });
+
+  // Collapse input section to highlight results
+  document.getElementById('chordPickerRoot').style.display = 'none';
+  document.getElementById('chordPickerQuality').style.display = 'none';
+  document.getElementById('chordChips').style.display = 'none';
+  // Hide the label + input row (parent divs)
+  const pickerLabel = document.querySelector('#tabManual > div:first-child');
+  if (pickerLabel) pickerLabel.style.display = 'none';
+  const typeLabel = document.querySelector('#tabManual > div:nth-child(3)');
+  if (typeLabel) typeLabel.style.display = 'none';
+
+  // Show a compact "editing bar" above results instead
+  const progInput = document.getElementById('progressionInput');
+  const inputRow = progInput ? progInput.closest('div') : null;
+  if (inputRow) {
+    inputRow.style.marginBottom = '0.25rem';
+    inputRow.style.marginTop = '0';
+  }
 
   document.getElementById('progressionResult').innerHTML =
     '<div class="section-divider" style="margin:0.25rem 0 1rem"></div>' +
@@ -2987,10 +3014,15 @@ function resetImageUpload() {
   document.getElementById('analyserPreview').style.display = 'none';
   document.getElementById('analyserResult').innerHTML = '';
   document.getElementById('analyserLoading').style.display = 'none';
+  // Restore worker status
+  const ws = document.getElementById('workerStatus');
+  if (ws) ws.style.display = 'flex';
 }
 
 async function analyseImage() {
   if (!analyserImageBase64) return;
+  // Collapse preview to highlight loading + results
+  document.getElementById('analyserPreview').style.display = 'none';
 
   // Detect if running as local file  -  fetch won't work
   if (window.location.protocol === 'file:') {

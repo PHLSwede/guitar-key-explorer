@@ -722,7 +722,7 @@
 })();
 
 // Safari onclick safety stubs - replaced by full definitions when script loads
-var _safariStubs = ['initFileUpload','loadAddFile','resetAdd','analyseAndAdd','showAddModal','switchAddTab','showScanModal','connectDrive','toggleLibTheme','setSongView','attachSheet','viewFullSheet','signInWithGoogle','openLocalFilePicker','openLinkedFile','removeLinkedFile',
+var _safariStubs = ['confirmFileAdd','initFileUpload','loadAddFile','resetAdd','analyseAndAdd','showAddModal','switchAddTab','showScanModal','connectDrive','toggleLibTheme','setSongView','attachSheet','viewFullSheet','signInWithGoogle','openLocalFilePicker','openLinkedFile','removeLinkedFile',
   'showSetCreateModal','showSet','showAllSongs','showSong','deleteSong','cycleProgress',
   'closeAddModal','closeSetCreateModal','closeScanModal','closeSongModal','closeAddToSetModal',
   'createSet','deleteSet','renameSet','selectSetType','setSetEmoji','toggleSongInSet',
@@ -1212,15 +1212,17 @@ async function syncFromSupabase() {
       localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
     }
 
-    // Load preferences
-    const { data: prefs } = await sb.from('preferences')
-      .select('*')
-      .eq('user_id', currentUser.id)
-      .single();
-    if (prefs) {
-      currentView = prefs.view_mode || 'grid';
-      setView(currentView, true); // silent
-    }
+    // Load preferences (table may not exist yet - ignore errors)
+    try {
+      const { data: prefs } = await sb.from('preferences')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .single();
+      if (prefs) {
+        currentView = prefs.view_mode || 'grid';
+        setView(currentView, true);
+      }
+    } catch(e) { /* preferences table not set up yet */ }
 
   } catch(e) {
     console.warn('Sync error:', e);
@@ -1882,6 +1884,14 @@ async function clearLibrary() {
 
 // -- ADD MODAL TABS ------------------------------------------------------------
 function switchAddTab(tab) {
+  // Restore all collapsed sections when switching tabs
+  const urlPanel = document.getElementById('addPanelUrl');
+  if (urlPanel) urlPanel.querySelectorAll('[style*="display: none"]').forEach(el => {
+    if (el.id !== 'urlLoading' && el.id !== 'urlPreview' && el.id !== 'urlError') el.style.display = '';
+  });
+  const searchPanel = document.getElementById('addPanelSearch');
+  if (searchPanel) { const first = searchPanel.querySelector('div:first-child'); if (first) first.style.display = ''; }
+
   ['url','search','file'].forEach(t => {
     const btn = document.getElementById('addTab' + t.charAt(0).toUpperCase() + t.slice(1));
     const panel = document.getElementById('addPanel' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -1978,6 +1988,18 @@ function htmlToText(html, url) {
 
 function showUrlPreview(song) {
   const diffCls = song.difficulty==='Easy'?'color:var(--green-light)':song.difficulty==='Hard'?'color:var(--amber)':'color:var(--gold)';
+  // Collapse the input section to make result prominent
+  const urlInput = document.getElementById('addPanelUrl');
+  if (urlInput) {
+    urlInput.querySelectorAll('.url-input-section').forEach(el => el.style.display = 'none');
+    // Hide quick site buttons and input row
+    const children = urlInput.children;
+    for (let i = 0; i < children.length - 2; i++) { // keep loading + preview
+      if (children[i].id !== 'urlLoading' && children[i].id !== 'urlPreview' && children[i].id !== 'urlError') {
+        children[i].style.display = 'none';
+      }
+    }
+  }
   document.getElementById('urlPreview').style.display = 'block';
   document.getElementById('urlPreview').innerHTML = `
     <div style="background:var(--surface2);border:1px solid var(--surface3);border-radius:10px;padding:1rem;margin-bottom:0.75rem">
@@ -2077,6 +2099,12 @@ If no results found: []`;
 }
 
 function renderSearchResults(results, query) {
+  // Collapse search input to give results more room
+  const panel = document.getElementById('addPanelSearch');
+  if (panel) {
+    const inputRow = panel.querySelector('div:first-child');
+    if (inputRow) inputRow.style.display = 'none';
+  }
   const container = document.getElementById('searchResults');
   if (!results.length) {
     container.innerHTML = `<div style="font-size:0.7rem;color:var(--muted);padding:1rem;text-align:center">
@@ -2476,6 +2504,10 @@ async function analyseAndAdd() {
   const loading = document.getElementById('addLoading');
   const btn = document.getElementById('analyseBtn');
   const err = document.getElementById('addError');
+  const preview = document.getElementById('addPreview');
+
+  // Collapse input to focus on loading state
+  if (preview) preview.style.display = 'none';
   if (loading) loading.style.display = 'flex';
   if (btn) btn.disabled = true;
   if (err) err.style.display = 'none';
@@ -2486,21 +2518,53 @@ async function analyseAndAdd() {
     song.id = Date.now();
     song.fileName = addFileName;
     song.source = 'upload';
-    library.push(song);
-    await dbAddSong(song);
-    renderLibrary();
-    updateStats();
-    closeAddModal();
-    resetAdd();
+
+    // Show result card before adding
+    if (loading) loading.style.display = 'none';
+    const diffCls = song.difficulty==='Easy'?'color:var(--green-light)':song.difficulty==='Hard'?'color:var(--amber)':'color:var(--gold)';
+    const resultDiv = document.getElementById('addError'); // reuse container
+    if (resultDiv) {
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = `
+        <div style="background:var(--surface2);border:1px solid rgba(200,149,42,0.3);border-radius:10px;padding:1rem;margin-bottom:0.75rem">
+          <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--gold-light);margin-bottom:0.1rem">${song.title||'Unknown'}</div>
+          <div style="font-size:0.65rem;color:var(--muted);margin-bottom:0.5rem">${song.artist||''}</div>
+          <div style="display:flex;gap:0.75rem;flex-wrap:wrap;font-size:0.68rem;margin-bottom:0.5rem">
+            <span>Key: <strong style="color:var(--gold)">${song.key||'?'} ${song.mode||''}</strong></span>
+            <span>Difficulty: <strong style="${diffCls}">${song.difficulty||'?'}</strong></span>
+            <span>Genre: <strong style="color:var(--text)">${song.genre||'?'}</strong></span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-bottom:0.75rem">
+            ${(song.chords||[]).map(c=>`<span style="background:var(--surface3);border-radius:4px;padding:0.1rem 0.35rem;font-size:0.62rem;color:var(--text)">${c}</span>`).join('')}
+          </div>
+          <div style="display:flex;gap:0.5rem">
+            <button class="btn btn-primary" onclick="confirmFileAdd()">+ Add to Library</button>
+            <button class="btn btn-ghost" onclick="closeAddModal()">Cancel</button>
+          </div>
+        </div>`;
+      window._pendingFileSong = song;
+    }
   } catch(e) {
+    if (loading) loading.style.display = 'none';
+    if (preview) preview.style.display = 'block';
+    if (btn) btn.disabled = false;
     if (err) {
       err.style.display = 'block';
-      err.innerHTML = '<div style="color:var(--red);font-size:0.7rem;padding:0.75rem;background:rgba(224,120,120,0.05);border-left:3px solid var(--red);border-radius:0 6px 6px 0">! ' + e.message + '</div>';
+      err.innerHTML = '<div style="color:var(--red);font-size:0.7rem;padding:0.75rem;background:rgba(224,120,120,0.05);border-left:3px solid var(--red);border-radius:0 6px 6px 0">⚠ ' + e.message + '</div>';
     }
-  } finally {
-    if (loading) loading.style.display = 'none';
-    if (btn) btn.disabled = false;
   }
+}
+
+async function confirmFileAdd() {
+  const song = window._pendingFileSong;
+  if (!song) return;
+  library.push(song);
+  await dbAddSong(song);
+  renderLibrary();
+  updateStats();
+  closeAddModal();
+  resetAdd();
+  window._pendingFileSong = null;
 }
 
 async function analyseFileData(base64, mediaType, fileName) {
@@ -2616,6 +2680,31 @@ if (typeof showAddToSetModal !== "undefined") window.showAddToSetModal = showAdd
 if (typeof showLoginError !== "undefined") window.showLoginError = showLoginError;
 if (typeof showUrlPreview !== "undefined") window.showUrlPreview = showUrlPreview;
 if (typeof signInWithGoogle !== "undefined") window.signInWithGoogle = signInWithGoogle;
+window.confirmFileAdd = confirmFileAdd;
+window.toggleLibTheme = toggleLibTheme;
+
+// ── THEME TOGGLE ──────────────────────────────────────────────────────────────
+function toggleLibTheme() {
+  const html = document.documentElement;
+  const isOpen = html.getAttribute('data-theme') === 'open';
+  const next = isOpen ? 'dark' : 'open';
+  html.setAttribute('data-theme', next);
+  const lbl = document.getElementById('libThemeLabel');
+  if (lbl) lbl.textContent = next === 'open' ? 'Open Stage' : 'Studio Dark';
+  localStorage.setItem('gxTheme', next);
+}
+window.toggleLibTheme = toggleLibTheme;
+
+// Restore saved theme on load
+(function() {
+  const saved = localStorage.getItem('gxTheme');
+  if (saved === 'open') {
+    document.documentElement.setAttribute('data-theme', 'open');
+    const lbl = document.getElementById('libThemeLabel');
+    if (lbl) lbl.textContent = 'Open Stage';
+  }
+})();
+// ── END THEME TOGGLE ──────────────────────────────────────────────────────────
 if (typeof songCardHTML !== "undefined") window.songCardHTML = songCardHTML;
 if (typeof songRowHTML !== "undefined") window.songRowHTML = songRowHTML;
 if (typeof suggestPentatonic !== "undefined") window.suggestPentatonic = suggestPentatonic;
