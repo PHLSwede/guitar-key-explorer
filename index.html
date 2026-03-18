@@ -1204,7 +1204,7 @@ function chordDiagramSVG(chordData, size=110) {
   if (sf === 1) {
     svg += `<rect x="${padL}" y="${padT-4}" width="${gridW}" height="5" rx="2" fill="#C8952A"/>`;
   } else {
-    svg += `<text x="${padL-4}" y="${padT+fsp*0.6}" text-anchor="end" fill="#888" font-size="${size*0.11}" font-family="Space Mono,monospace">${sf}fr</text>`;
+    svg += `<text x="${padL-4}" y="${padT+fsp*0.6}" text-anchor="end" fill="#888" font-size="${size*0.11}" font-family="Space Mono,monospace">${sf}</text>`;
   }
 
   // Fret lines
@@ -2398,7 +2398,7 @@ function buildBoxSVG(pentaSet, rootNote, startFret, openNotes) {
   if (startFret === 0 || startFret === 1) {
     svg += `<rect x="${padL}" y="${padT}" width="4" height="${strings*cellH}" rx="1.5" fill="#C8952A"/>`;
   } else {
-    svg += `<text x="${padL-4}" y="${padT+cellH*0.7}" text-anchor="end" fill="#A8A8A8" font-size="8" font-family="Space Mono">${startFret}fr</text>`;
+    svg += `<text x="${padL-4}" y="${padT+cellH*0.7}" text-anchor="end" fill="#A8A8A8" font-size="8" font-family="Space Mono">${startFret}</text>`;
   }
 
   // Fret lines
