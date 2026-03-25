@@ -488,10 +488,13 @@
 
   /* GUITAR NECK - SCALE VIEW */
   .neck-container {
+    cursor: pointer;
+    transition: opacity 0.15s;
     overflow-x: auto;
     padding-bottom: 0.5rem;
     margin-top: 1rem;
   }
+  .neck-container:hover { opacity: 0.85; }
   .neck-container::-webkit-scrollbar { height: 4px; }
   .neck-container::-webkit-scrollbar-track { background: var(--surface2); }
   .neck-container::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
@@ -950,6 +953,45 @@
     max-width: 100% !important;
   }
   /* ── END PRESENTATION MODE ───────────────────────────────────────────────── */
+
+  /* ── FRETBOARD FULLSCREEN ────────────────────────────────────────────────── */
+  .fretboard-overlay {
+    display: none; position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100%; height: 100%;
+    background: var(--bg); z-index: 600;
+    flex-direction: column; align-items: center; justify-content: center;
+    padding: 1rem;
+  }
+  .fretboard-overlay.active { display: flex; }
+  .fretboard-overlay-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem; color: var(--gold);
+    margin-bottom: 1rem; text-align: center;
+  }
+  .fretboard-overlay-neck {
+    overflow-x: auto; width: 100%;
+    max-width: 900px;
+  }
+  .fretboard-overlay-neck svg {
+    width: 100% !important; height: auto !important;
+    min-width: 600px;
+  }
+  .fretboard-overlay-close {
+    position: fixed; top: 1rem; right: 1rem;
+    background: var(--surface); border: 1px solid var(--surface3);
+    border-radius: 8px; padding: 0.4rem 0.9rem;
+    color: var(--muted); font-family: var(--font-mono);
+    font-size: 0.65rem; cursor: pointer; z-index: 10;
+    transition: all 0.15s;
+  }
+  .fretboard-overlay-close:hover { border-color: var(--red); color: var(--red); }
+  .fretboard-overlay-hint {
+    margin-top: 1rem; font-size: 0.58rem;
+    color: var(--muted); letter-spacing: 0.1em;
+    text-align: center;
+  }
+  /* ── END FRETBOARD FULLSCREEN ────────────────────────────────────────────── */
 </style>
 </head>
 <body>
@@ -1120,17 +1162,17 @@
   <!-- SCALE TAB -->
   <div class="tab-content" id="tab-scale">
     <div class="scale-section">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.5rem">
-        <div class="scale-title" id="scaleTitle">C Major Scale</div>
-        <button class="present-btn" onclick="presentSection('scale')">⛶ Present</button>
-      </div>
+      <div class="scale-title" id="scaleTitle">C Major Scale</div>
       <div class="scale-notes-row" id="scaleNotes"></div>
       <div class="section-divider"></div>
       <div style="font-size:0.65rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.75rem;">Scale Formula</div>
       <div class="formula-row" id="scaleFormula"></div>
       <div class="section-divider"></div>
-      <div style="font-size:0.65rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.75rem;">Fretboard · Position 1 (Open)</div>
-      <div class="neck-container">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+        <div style="font-size:0.65rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase">Fretboard · Position 1 (Open)</div>
+        <button class="present-btn" onclick="presentSection('scale')">⛶ Present</button>
+      </div>
+      <div class="neck-container" onclick="openFretboardOverlay('scale')" title="Click to fullscreen">
         <div id="scaleNeck"></div>
       </div>
     </div>
@@ -1139,9 +1181,6 @@
 
   <!-- PENTATONIC TAB -->
   <div class="tab-content" id="tab-pentatonic">
-    <div style="display:flex;justify-content:flex-end;margin-bottom:0.5rem">
-      <button class="present-btn" onclick="presentSection('pentatonic')">⛶ Present</button>
-    </div>
     <div id="pentatonicContent"></div>
   </div>
 
@@ -2335,7 +2374,7 @@ function renderPentatonic() {
 
     <div class="section-divider"></div>
     <div style="font-size:0.65rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.6rem">Full Fretboard (all positions)</div>
-    <div class="neck-container" style="margin-bottom:1.5rem">
+    <div class="neck-container" style="margin-bottom:1.5rem" onclick="openFretboardOverlay('pentatonic')" title="Click to fullscreen">
       ${buildPentaNeck(activePentaNotes, activeRoot)}
     </div>
 
@@ -2698,8 +2737,11 @@ function renderLead(scale, qualities, romans) {
       ${pentaMapHTML(majPenta, majPentaRoot, displayNote(majPentaRoot) + ' Major Pentatonic  -  amber = root, green = in penta')}
       <div style="height:0.75rem"></div>
       ${pentaMapHTML(minPenta, minPentaRoot, displayNote(minPentaRoot) + ' Minor Pentatonic  -  amber = root, green = in penta')}
-      <div style="font-size:0.65rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;margin:1rem 0 0.5rem">Full Neck  -  ${displayNote(majPentaRoot)} Major / ${displayNote(minPentaRoot)} Minor Pentatonic</div>
-      <div class="neck-container">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:1rem 0 0.5rem">
+        <div style="font-size:0.65rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase">Full Neck  -  ${displayNote(majPentaRoot)} Major / ${displayNote(minPentaRoot)} Minor Pentatonic</div>
+        <button class="present-btn" onclick="presentSection('pentatonic')">⛶ Present</button>
+      </div>
+      <div class="neck-container" onclick="openFretboardOverlay('pentatonic-full')" title="Click to fullscreen">
         ${buildLeadNeck(majPenta, majPentaRoot, [])}
       </div>
       <div class="info-box" style="margin-top:0.75rem">
@@ -3276,9 +3318,60 @@ function closePresentation() {
 
 // Close on Escape key
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closePresentation();
+  if (e.key === 'Escape') { closePresentation(); closeFretboardOverlay(); }
 });
 // ── END PRESENTATION MODE ─────────────────────────────────────────────────────
+
+
+// ── FRETBOARD FULLSCREEN ──────────────────────────────────────────────────────
+function openFretboardOverlay(type) {
+  const overlay = document.getElementById('fretboardOverlay');
+  const neck = document.getElementById('fretboardOverlayNeck');
+  const title = document.getElementById('fretboardOverlayTitle');
+  const dn = displayNote(currentKey);
+  const modeNames = {
+    major:'Major', minor:'Minor', dorian:'Dorian',
+    mixolydian:'Mixolydian', harmonic_minor:'Harmonic Minor', phrygian:'Phrygian'
+  };
+  const modeName = modeNames[currentMode] || currentMode;
+
+  if (type === 'scale') {
+    title.textContent = dn + ' ' + modeName + ' Scale — Fretboard';
+    neck.innerHTML = document.getElementById('scaleNeck').innerHTML;
+  } else if (type === 'pentatonic') {
+    title.textContent = dn + ' Pentatonic — Box Position';
+    const pentaContainers = document.querySelectorAll('#tab-pentatonic .neck-container');
+    neck.innerHTML = pentaContainers[0]?.innerHTML || '';
+  } else if (type === 'pentatonic-full') {
+    title.textContent = dn + ' Major / Minor Pentatonic — Full Neck';
+    // Get the full neck (second neck-container in pentatonic tab)
+    const containers = document.querySelectorAll('#tab-pentatonic .neck-container');
+    neck.innerHTML = containers[containers.length - 1]?.innerHTML || '';
+  }
+
+  // Scale SVG to fill screen nicely
+  const svgs = neck.querySelectorAll('svg');
+  svgs.forEach(svg => {
+    svg.style.width = '100%';
+    svg.style.height = 'auto';
+  });
+
+  overlay.classList.add('active');
+  overlay.onclick = (e) => { if (e.target === overlay) closeFretboardOverlay(); };
+
+  // Try native fullscreen
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
+}
+
+function closeFretboardOverlay() {
+  document.getElementById('fretboardOverlay').classList.remove('active');
+  if (document.exitFullscreen && document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+  }
+}
+// ── END FRETBOARD FULLSCREEN ──────────────────────────────────────────────────
 
 // Expose functions to global scope for Safari onclick compatibility
 window.switchTab = switchTab;
@@ -3295,6 +3388,8 @@ window.analyseImage = analyseImage;
 window.resetImageUpload = resetImageUpload;
 window.applyAnalysis = applyAnalysis;
 window.presentSection = presentSection;
+window.openFretboardOverlay = openFretboardOverlay;
+window.closeFretboardOverlay = closeFretboardOverlay;
 window.closePresentation = closePresentation;
 window.setPentaType = setPentaType;
 window.cycleProgress = cycleProgress;
@@ -3305,6 +3400,14 @@ window.closeSongModal = closeSongModal;
 // Built: 2026-03-15 13:13:36
 </script>
 
+
+<!-- FRETBOARD FULLSCREEN OVERLAY -->
+<div class="fretboard-overlay" id="fretboardOverlay">
+  <button class="fretboard-overlay-close" onclick="closeFretboardOverlay()">✕ Close</button>
+  <div class="fretboard-overlay-title" id="fretboardOverlayTitle"></div>
+  <div class="fretboard-overlay-neck" id="fretboardOverlayNeck"></div>
+  <div class="fretboard-overlay-hint">Tap anywhere to close</div>
+</div>
 <!-- PRESENTATION OVERLAY -->
 <div class="present-overlay" id="presentOverlay">
   <div class="present-topbar">
