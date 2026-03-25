@@ -961,35 +961,40 @@
     width: 100%; height: 100%;
     background: var(--bg); z-index: 600;
     flex-direction: column; align-items: center; justify-content: center;
-    padding: 1rem;
+    padding: 0.5rem;
+    overflow: hidden;
   }
   .fretboard-overlay.active { display: flex; }
   .fretboard-overlay-title {
     font-family: 'Playfair Display', serif;
-    font-size: 1.1rem; color: var(--gold);
-    margin-bottom: 1rem; text-align: center;
+    font-size: clamp(0.8rem, 3vw, 1.1rem); color: var(--gold);
+    margin-bottom: 0.6rem; text-align: center;
+    flex-shrink: 0;
   }
   .fretboard-overlay-neck {
-    overflow-x: auto; width: 100%;
-    max-width: 900px;
+    width: 100%; max-width: 100%;
+    flex: 1; display: flex; align-items: center;
+    overflow: hidden;
   }
   .fretboard-overlay-neck svg {
-    width: 100% !important; height: auto !important;
-    min-width: 600px;
+    width: 100% !important;
+    height: auto !important;
+    max-height: 80vh;
   }
   .fretboard-overlay-close {
-    position: fixed; top: 1rem; right: 1rem;
+    position: fixed; top: 0.6rem; right: 0.6rem;
     background: var(--surface); border: 1px solid var(--surface3);
-    border-radius: 8px; padding: 0.4rem 0.9rem;
+    border-radius: 8px; padding: 0.35rem 0.75rem;
     color: var(--muted); font-family: var(--font-mono);
     font-size: 0.65rem; cursor: pointer; z-index: 10;
     transition: all 0.15s;
   }
   .fretboard-overlay-close:hover { border-color: var(--red); color: var(--red); }
   .fretboard-overlay-hint {
-    margin-top: 1rem; font-size: 0.58rem;
-    color: var(--muted); letter-spacing: 0.1em;
-    text-align: center;
+    flex-shrink: 0;
+    font-size: 0.55rem; color: var(--muted);
+    letter-spacing: 0.1em; text-align: center;
+    margin-top: 0.4rem;
   }
   /* ── END FRETBOARD FULLSCREEN ────────────────────────────────────────────── */
 </style>
@@ -999,7 +1004,7 @@
 <div class="header">
   <h1>Guitar Key Explorer</h1>
   <p>Chords · Inversions · Scales · Pentatonic</p>
-  <p style="font-size:0.55rem;color:var(--muted);margin-top:0.2rem;letter-spacing:0.1em">v2.2 · 2026.03.19 17:12</p>
+  <p style="font-size:0.55rem;color:var(--muted);margin-top:0.2rem;letter-spacing:0.1em">v2.3 · 2026.03.25 20:29</p>
   <p style="font-size:0.6rem;color:var(--muted);margin-top:0.25rem">🧠 Quiz &amp; 🎚 Transpose <span style="color:var(--surface3)">—</span> <em style="color:var(--muted)">coming soon</em></p>
   <div style="margin-top:0.6rem;display:flex;align-items:center;justify-content:center;gap:0.75rem">
     <span style="font-size:0.62rem;color:var(--muted);letter-spacing:0.08em">by Oskar Johansson</span>
@@ -2162,10 +2167,14 @@ function buildScaleNeck(scale) {
     }
   });
 
-  // Fret numbers
+  // Fret numbers - highlight marker frets only
+  const markerFrets = [5, 7, 9, 12];
   for (let f = 1; f <= frets; f++) {
     const x = padL + f * cellW - cellW/2;
-    svg += `<text x="${x}" y="${H-2}" text-anchor="middle" fill="#444" font-size="9" font-family="Space Mono">${f}</text>`;
+    const isMarker = markerFrets.includes(f);
+    if (isMarker) {
+      svg += `<text x="${x}" y="${H-2}" text-anchor="middle" fill="${f===12?'#C8952A':'#888'}" font-size="${f===12?10:9}" font-family="Space Mono" font-weight="${f===12?'bold':'normal'}">${f}</text>`;
+    }
   }
 
   // String labels
@@ -2426,7 +2435,9 @@ function buildPentaNeck(pentaNotes, rootNote) {
     }
   });
   for (let f = 1; f <= frets; f++) {
-    svg += `<text x="${padL+f*cellW-cellW/2}" y="${H-2}" text-anchor="middle" fill="#444" font-size="9" font-family="Space Mono">${f}</text>`;
+    if ([5,7,9,12].includes(f)) {
+      svg += `<text x="${padL+f*cellW-cellW/2}" y="${H-2}" text-anchor="middle" fill="${f===12?'#C8952A':'#888'}" font-size="${f===12?10:9}" font-family="Space Mono" font-weight="${f===12?'bold':'normal'}">${f}</text>`;
+    }
   }
   openNotes.forEach((n, s) => {
     const y = padT + s * cellH + cellH/2;
@@ -2602,7 +2613,9 @@ function buildLeadNeck(pentaNotes, rootNote, chordNotes) {
   });
   // Fret numbers
   for (let f=1; f<=frets; f++) {
-    svg += `<text x="${padL+f*cellW-cellW/2}" y="${H-2}" text-anchor="middle" fill="#444" font-size="8" font-family="Space Mono">${f}</text>`;
+    if ([5,7,9,12].includes(f)) {
+      svg += `<text x="${padL+f*cellW-cellW/2}" y="${H-2}" text-anchor="middle" fill="${f===12?'#C8952A':'#888'}" font-size="${f===12?10:8}" font-family="Space Mono" font-weight="${f===12?'bold':'normal'}">${f}</text>`;
+    }
   }
   // String labels
   openNotes.forEach((n,s) => {
@@ -3349,11 +3362,21 @@ function openFretboardOverlay(type) {
     neck.innerHTML = containers[containers.length - 1]?.innerHTML || '';
   }
 
-  // Scale SVG to fill screen nicely
+  // Scale SVG to fill screen nicely - fit to width, no scrolling needed
   const svgs = neck.querySelectorAll('svg');
   svgs.forEach(svg => {
+    // Preserve viewBox but scale to fit container
+    if (!svg.getAttribute('viewBox')) {
+      const w = svg.getAttribute('width');
+      const h = svg.getAttribute('height');
+      if (w && h) svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    }
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', 'auto');
     svg.style.width = '100%';
     svg.style.height = 'auto';
+    svg.style.display = 'block';
+    svg.removeAttribute('height');
   });
 
   overlay.classList.add('active');
