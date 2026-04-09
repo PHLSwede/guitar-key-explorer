@@ -27,7 +27,7 @@
 
     // ── YOUR ANTHROPIC API KEY ────────────────────────────────────────────────
     // Get one free at console.anthropic.com
-    const ANTHROPIC_API_KEY = "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";
+    const ANTHROPIC_API_KEY = "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";
     
 
     // ── PICKS ─────────────────────────────────────────────────────────────────
@@ -105,7 +105,7 @@
     }
 
     async function fetchLivePositions(onProgress) {
-      const NOT_CONFIGURED = ANTHROPIC_API_KEY === "PASTE_YOUR_ANTHROPIC_API_KEY_HERE";
+      const NOT_CONFIGURED = ANTHROPIC_API_KEY === "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";
       if (NOT_CONFIGURED) throw new Error("Anthropic API key not configured");
 
       onProgress("Searching Masters leaderboard...");
