@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Masters Leaderboard 2026</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #080f08; font-family: Georgia, serif; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #0f1a0f; }
+    ::-webkit-scrollbar-thumb { background: #1e3020; border-radius: 2px; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type=number] { -moz-appearance: textfield; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState } = React;
+
+    // ── YOUR ANTHROPIC API KEY ────────────────────────────────────────────────
+    // Get one free at console.anthropic.com
+    const ANTHROPIC_API_KEY = "PASTE_YOUR_ANTHROPIC_API_KEY_HERE";
+
+    // ── PICKS ─────────────────────────────────────────────────────────────────
+    const PICKS = {
+      Helge:  ["Viktor Hovland", "Marco Penge", "Jon Rahm", "Justin Thomas", "Hideki Matsuyama", "J.J. Spaun"],
+      Mattis: ["Scottie Scheffler", "Xander Schauffele", "Matt Fitzpatrick", "Brooks Koepka", "Akshay Bhatia", "Sam Burns"],
+      Jesper: ["Ludvig Åberg", "Justin Rose", "Robert MacIntyre", "Collin Morikawa", "Gary Woodland", "Jason Day"],
+      Oskar:  ["Rory McIlroy", "Bryson DeChambeau", "Cameron Young", "Tommy Fleetwood", "Patrick Cantlay", "Tyrrell Hatton"],
+    };
+
+    const GROUP = ["Helge", "Mattis", "Jesper", "Oskar"];
+    const ALL_GOLFERS = [...new Set(Object.values(PICKS).flat())];
+
+    const COLORS = {
+      Helge:  { bg: "#0d1529", accent: "#60a5fa", muted: "#93c5fd", dim: "#1e3a5f" },
+      Mattis: { bg: "#1f0d1f", accent: "#e879f9", muted: "#f0abfc", dim: "#6b21a8" },
+      Jesper: { bg: "#0d2016", accent: "#34d399", muted: "#6ee7b7", dim: "#064e3b" },
+      Oskar:  { bg: "#1f1400", accent: "#fbbf24", muted: "#fcd34d", dim: "#78350f" },
+    };
+
+    const EMOJI  = { Helge: "🔵", Mattis: "🟣", Jesper: "🟢", Oskar: "🟡" };
+    const MEDALS = ["🥇", "🥈", "🥉", "4️⃣"];
+
+    const T = {
+      bg: "#080f08", surface: "#0f1a0f", border: "#1e3020",
+      gold: "#b8973a", goldLight: "#d4af57", cream: "#f0ebe0", muted: "#5a7a5a",
+    };
+
+    const STORAGE_KEY = "masters-leaderboard-2026";
+
+    function posLabel(p) { return p == null ? "—" : `#${p}`; }
+    function posColor(p) {
+      if (p == null) return T.muted;
+      if (p <= 5)  return "#34d399";
+      if (p <= 15) return "#fbbf24";
+      if (p <= 30) return "#f97316";
+      return "#f87171";
+    }
+    function ownerOf(g) { return GROUP.find(p => PICKS[p].includes(g)); }
+
+    function loadPos() {
+      try { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : {}; }
+      catch { return {}; }
+    }
+    function savePos(pos) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(pos)); } catch {}
+    }
+
+    function getTeamResult(player, positions) {
+      const withPos = PICKS[player]
+        .map(p => ({ name: p, pos: positions[p] ?? null }))
+        .sort((a, b) => a.pos == null ? 1 : b.pos == null ? -1 : a.pos - b.pos);
+      const counted = withPos.filter(x => x.pos !== null).slice(0, 4);
+      const total = counted.length > 0 ? counted.reduce((s, x) => s + x.pos, 0) : null;
+      return { total, counted: counted.length, breakdown: withPos };
+    }
+
+    function getStandings(positions) {
+      return GROUP.map(p => ({ name: p, ...getTeamResult(p, positions) }))
+        .sort((a, b) => {
+          if (a.total == null && b.total == null) return 0;
+          if (a.total == null) return 1;
+          if (b.total == null) return -1;
+          if (a.total !== b.total) return a.total - b.total;
+          const aBest = a.breakdown.filter(x => x.pos !== null).reduce((m, x) => Math.min(m, x.pos), 999);
+          const bBest = b.breakdown.filter(x => x.pos !== null).reduce((m, x) => Math.min(m, x.pos), 999);
+          return aBest - bBest;
+        });
+    }
+
+    function getRankedGolfers(positions) {
+      return ALL_GOLFERS
+        .map(g => ({ name: g, pos: positions[g] ?? null, owner: ownerOf(g) }))
+        .sort((a, b) => a.pos == null ? 1 : b.pos == null ? -1 : a.pos - b.pos);
+    }
+
+    async function fetchLivePositions(onProgress) {
+      const NOT_CONFIGURED = ANTHROPIC_API_KEY === "PASTE_YOUR_ANTHROPIC_API_KEY_HERE";
+      if (NOT_CONFIGURED) throw new Error("Anthropic API key not configured");
+
+      onProgress("Searching Masters leaderboard...");
+
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+          model: "claude-opus-4-5",
+          max_tokens: 1024,
+          tools: [{ type: "web_search_20250305", name: "web_search" }],
+          messages: [{
+            role: "user",
+            content: `Search the 2026 Masters Tournament leaderboard RIGHT NOW. For each golfer below, give me their current leaderboard position as a whole number (1 = leader, ties use same number e.g. T5 = 5). If withdrawn, missed cut, or not yet started use null. Return ONLY a raw JSON object with no markdown, no explanation, no code fences. Example: {"Scottie Scheffler":1,"Rory McIlroy":3}
+
+Golfers to look up: ${ALL_GOLFERS.join(", ")}`
+          }]
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error?.message || `API error ${response.status}`);
+      }
+
+      onProgress("Parsing results...");
+      const data = await response.json();
+      const textBlock = data.content?.find(b => b.type === "text");
+      if (!textBlock) throw new Error("No response from API");
+
+      const clean = textBlock.text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+
+      const valid = {};
+      for (const [k, v] of Object.entries(parsed)) {
+        if (typeof v === "number" && !isNaN(v) && v > 0) valid[k] = Math.round(v);
+      }
+      return valid;
+    }
+
+    function App() {
+      const [positions, setPositions] = useState(loadPos);
+      const [inputs, setInputs]       = useState({});
+      const [tab, setTab]             = useState("board");
+      const [activePlayer, setActivePlayer] = useState("Helge");
+      const [fetching, setFetching]   = useState(false);
+      const [fetchMsg, setFetchMsg]   = useState("");
+      const [lastUpdated, setLastUpdated] = useState(null);
+      const [fetchError, setFetchError]   = useState("");
+
+      function applyPos(golfer, val) {
+        const v = parseInt(val, 10);
+        if (!isNaN(v) && v > 0) {
+          const next = { ...positions, [golfer]: v };
+          setPositions(next); savePos(next);
+          setInputs(prev => { const n = { ...prev }; delete n[golfer]; return n; });
+        }
+      }
+
+      function clearPos(golfer) {
+        const next = { ...positions };
+        delete next[golfer];
+        setPositions(next); savePos(next);
+      }
+
+      function saveAll() {
+        const next = { ...positions };
+        let changed = false;
+        for (const [g, val] of Object.entries(inputs)) {
+          const v = parseInt(val, 10);
+          if (!isNaN(v) && v > 0) { next[g] = v; changed = true; }
+        }
+        if (changed) { setPositions(next); savePos(next); setInputs({}); }
+      }
+
+      async function handleFetch() {
+        setFetching(true);
+        setFetchError("");
+        setFetchMsg("");
+        try {
+          const valid = await fetchLivePositions(setFetchMsg);
+          const next = { ...positions, ...valid };
+          setPositions(next);
+          savePos(next);
+          setLastUpdated(new Date().toLocaleTimeString());
+          setFetchMsg(`✓ Updated ${Object.keys(valid).length} positions`);
+        } catch (e) {
+          setFetchError(e.message || "Failed to fetch");
+          setFetchMsg("");
+        } finally {
+          setFetching(false);
+        }
+      }
+
+      const standings     = getStandings(positions);
+      const rankedGolfers = getRankedGolfers(positions);
+      const scored        = ALL_GOLFERS.filter(g => positions[g] != null).length;
+      const NOT_CONFIGURED = ANTHROPIC_API_KEY === "PASTE_YOUR_ANTHROPIC_API_KEY_HERE";
+
+      // ── REFRESH BUTTON (shared between tabs) ───────────────────────────────
+      const RefreshButton = () => (
+        <div style={{ padding: "0 14px 14px" }}>
+          <button
+            onClick={handleFetch}
+            disabled={fetching || NOT_CONFIGURED}
+            style={{
+              width: "100%", padding: "14px", borderRadius: 10, border: `1px solid ${T.gold}55`,
+              background: fetching ? T.border : NOT_CONFIGURED ? T.border : `linear-gradient(135deg, ${T.green}, #0f3d1f)`,
+              color: fetching || NOT_CONFIGURED ? T.muted : T.cream,
+              fontSize: 14, fontWeight: 700, cursor: fetching || NOT_CONFIGURED ? "not-allowed" : "pointer",
+              fontFamily: "Georgia", letterSpacing: 2, textTransform: "uppercase",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8
+            }}
+          >
+            {fetching
+              ? <><span className="spin">⟳</span> {fetchMsg || "Fetching..."}</>
+              : NOT_CONFIGURED
+              ? "⚠️ Add API Key to Enable"
+              : "⛳ Refresh Live Positions"
+            }
+          </button>
+          {fetchError && <div style={{ color: "#f87171", fontSize: 11, textAlign: "center", marginTop: 6 }}>{fetchError}</div>}
+          {lastUpdated && !fetching && <div style={{ color: T.muted, fontSize: 10, textAlign: "center", marginTop: 6, letterSpacing: 1 }}>LAST UPDATED {lastUpdated}</div>}
+          {NOT_CONFIGURED && (
+            <div style={{ color: T.muted, fontSize: 10, textAlign: "center", marginTop: 6 }}>
+              Get a free key at console.anthropic.com → paste in ANTHROPIC_API_KEY
+            </div>
+          )}
+        </div>
+      );
+
+      // ── LEADERBOARD TAB ────────────────────────────────────────────────────
+      const BoardTab = () => (
+        <div style={{ padding: "14px 14px 0" }}>
+          <RefreshButton />
+
+          <div style={{ color: T.gold, fontSize: 10, letterSpacing: 4, textTransform: "uppercase", marginBottom: 10 }}>Standings</div>
+
+          {standings.map((s, rank) => {
+            const col = COLORS[s.name];
+            const leading = rank === 0 && s.total !== null;
+            return (
+              <div key={s.name} style={{ background: col.bg, border: `1.5px solid ${leading ? col.accent : col.dim}`, borderRadius: 12, marginBottom: 8, boxShadow: leading ? `0 0 18px ${col.accent}33` : "none" }}>
+                <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 22 }}>{MEDALS[rank]}</span>
+                  <span style={{ fontSize: 16 }}>{EMOJI[s.name]}</span>
+                  <span style={{ color: col.accent, fontWeight: 700, fontSize: 17, flex: 1 }}>{s.name}</span>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ color: s.total !== null ? col.accent : T.muted, fontWeight: 900, fontSize: 26, lineHeight: 1 }}>
+                      {s.total !== null ? s.total : "—"}
+                    </div>
+                    <div style={{ color: T.muted, fontSize: 10 }}>{s.counted > 0 ? `top ${s.counted} of 6` : "no scores"}</div>
+                  </div>
+                </div>
+                <div style={{ borderTop: `1px solid ${col.dim}`, padding: "8px 16px", display: "flex", gap: 5, flexWrap: "wrap" }}>
+                  {s.breakdown.map((b, j) => {
+                    const counting = b.pos !== null && j < 4;
+                    return (
+                      <div key={b.name} style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", background: counting ? col.dim : T.bg, borderRadius: 20, opacity: counting ? 1 : 0.4, border: `1px solid ${counting ? col.accent + "44" : T.border}` }}>
+                        <span style={{ color: counting ? T.gold : T.muted, fontSize: 10 }}>{counting ? "★" : "○"}</span>
+                        <span style={{ color: col.muted, fontSize: 10, whiteSpace: "nowrap" }}>{b.name.split(" ").pop()}</span>
+                        <span style={{ color: posColor(b.pos), fontSize: 10, fontWeight: 700 }}>{posLabel(b.pos)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "20px 0 14px" }}>
+            <div style={{ flex: 1, height: 1, background: T.border }} />
+            <span style={{ color: T.gold, fontSize: 10, letterSpacing: 4, textTransform: "uppercase" }}>All Golfers Ranked</span>
+            <div style={{ flex: 1, height: 1, background: T.border }} />
+          </div>
+
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 20 }}>
+            {rankedGolfers.map((g, i) => {
+              const col = COLORS[g.owner];
+              return (
+                <div key={g.name} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderBottom: i < rankedGolfers.length - 1 ? `1px solid ${T.border}` : "none", background: i % 2 === 0 ? "transparent" : "#0a140a" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: g.pos != null ? posColor(g.pos) + "22" : T.border, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <span style={{ color: posColor(g.pos), fontWeight: 900, fontSize: 13 }}>{g.pos != null ? g.pos : "—"}</span>
+                  </div>
+                  <span style={{ color: T.cream, fontSize: 13, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.name}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", background: col.dim, borderRadius: 20, flexShrink: 0 }}>
+                    <span style={{ fontSize: 10 }}>{EMOJI[g.owner]}</span>
+                    <span style={{ color: col.accent, fontSize: 10, fontWeight: 700 }}>{g.owner}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+
+      // ── UPDATE TAB ─────────────────────────────────────────────────────────
+      const UpdateTab = () => (
+        <div style={{ padding: "14px 14px 0" }}>
+          <RefreshButton />
+
+          <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+            {GROUP.map(p => (
+              <button key={p} onClick={() => setActivePlayer(p)}
+                style={{ flex: 1, padding: "9px 4px", background: activePlayer === p ? COLORS[p].accent : T.surface, color: activePlayer === p ? "#000" : T.muted, fontSize: 13, fontWeight: 700, border: `1px solid ${activePlayer === p ? COLORS[p].accent : T.border}`, borderRadius: 8, cursor: "pointer", fontFamily: "Georgia" }}
+              >{EMOJI[p]}</button>
+            ))}
+          </div>
+
+          <div style={{ color: COLORS[activePlayer].accent, fontWeight: 700, fontSize: 17, marginBottom: 12 }}>
+            {EMOJI[activePlayer]} {activePlayer}'s Team
+          </div>
+
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
+            {PICKS[activePlayer].map((golfer, i) => {
+              const curVal = inputs[golfer] !== undefined ? inputs[golfer] : (positions[golfer] ?? "");
+              return (
+                <div key={golfer} style={{ display: "flex", alignItems: "center", gap: 8, padding: "11px 14px", borderBottom: i < 5 ? `1px solid ${T.border}` : "none" }}>
+                  <span style={{ color: T.cream, fontSize: 13, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{golfer}</span>
+                  <span style={{ color: posColor(positions[golfer]), fontSize: 13, fontWeight: 700, minWidth: 30, textAlign: "right" }}>{posLabel(positions[golfer])}</span>
+                  <input
+                    type="number" min="1"
+                    value={curVal}
+                    onChange={e => setInputs(prev => ({ ...prev, [golfer]: e.target.value }))}
+                    onKeyDown={e => e.key === "Enter" && applyPos(golfer, inputs[golfer])}
+                    placeholder="pos"
+                    style={{ width: 52, padding: "6px 8px", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 6, color: T.cream, fontSize: 13, textAlign: "center", fontFamily: "Georgia", outline: "none" }}
+                  />
+                  <button onClick={() => applyPos(golfer, inputs[golfer] ?? positions[golfer])}
+                    style={{ padding: "6px 10px", background: T.gold, color: "#000", fontSize: 12, fontWeight: 700, border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "Georgia" }}
+                  >✓</button>
+                  {positions[golfer] != null && (
+                    <button onClick={() => clearPos(golfer)}
+                      style={{ padding: "6px 8px", background: "transparent", color: T.muted, fontSize: 12, border: `1px solid ${T.border}`, borderRadius: 6, cursor: "pointer" }}
+                    >✕</button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 14, marginBottom: 14 }}>
+            <div style={{ color: T.gold, fontSize: 10, letterSpacing: 3, textTransform: "uppercase", marginBottom: 12 }}>Quick Update — All 24</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {ALL_GOLFERS.map(golfer => {
+                const owner = ownerOf(golfer);
+                const curVal = inputs[golfer] !== undefined ? inputs[golfer] : (positions[golfer] ?? "");
+                return (
+                  <div key={golfer} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <span style={{ fontSize: 10 }}>{EMOJI[owner]}</span>
+                    <span style={{ color: T.muted, fontSize: 11, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{golfer.split(" ").pop()}</span>
+                    <input
+                      type="number" min="1"
+                      value={curVal}
+                      onChange={e => setInputs(prev => ({ ...prev, [golfer]: e.target.value }))}
+                      placeholder="—"
+                      style={{ width: 46, padding: "5px 6px", background: T.bg, border: `1px solid ${positions[golfer] != null ? T.gold + "55" : T.border}`, borderRadius: 6, color: T.cream, fontSize: 12, textAlign: "center", fontFamily: "Georgia", outline: "none" }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <button onClick={saveAll}
+              style={{ width: "100%", marginTop: 14, padding: 13, background: `linear-gradient(135deg,${T.gold},${T.goldLight})`, color: "#000", fontSize: 14, fontWeight: 900, border: "none", borderRadius: 8, cursor: "pointer", letterSpacing: 2, textTransform: "uppercase", fontFamily: "Georgia" }}
+            >Save All</button>
+          </div>
+        </div>
+      );
+
+      return (
+        <div style={{ minHeight: "100vh", background: T.bg, paddingBottom: 72 }}>
+          <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: "14px 18px" }}>
+            <div style={{ color: T.gold, fontSize: 9, letterSpacing: 6, textTransform: "uppercase", marginBottom: 2 }}>Augusta National · 2026</div>
+            <div style={{ color: T.cream, fontSize: 22, fontWeight: 900 }}>Masters Leaderboard</div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+              <span style={{ color: T.muted, fontSize: 11 }}>Pick 6 · Best 4 positions · lowest wins</span>
+              <span style={{ color: T.gold, fontSize: 11 }}>{scored}/{ALL_GOLFERS.length} scored</span>
+            </div>
+          </div>
+
+          {tab === "board" ? <BoardTab /> : <UpdateTab />}
+
+          <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: T.surface, borderTop: `1px solid ${T.border}`, display: "flex", zIndex: 20 }}>
+            {[{ id: "board", label: "🏆 Leaderboard" }, { id: "update", label: "✏️ Manual" }].map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                style={{ flex: 1, padding: "14px 8px", background: tab === t.id ? T.bg : "transparent", color: tab === t.id ? T.goldLight : T.muted, fontSize: 13, fontWeight: tab === t.id ? 700 : 400, border: "none", cursor: "pointer", fontFamily: "Georgia", borderTop: tab === t.id ? `2px solid ${T.gold}` : "2px solid transparent" }}
+              >{t.label}</button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
