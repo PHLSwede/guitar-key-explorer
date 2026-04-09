@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Masters Leaderboard 2026</title>
+  <title>Masters Draft 2026</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
@@ -22,11 +22,11 @@
 <script type="text/babel">
   const { useState } = React;
 
-  // ESPN endpoints to try in order — free, no key needed
+  // ESPN endpoints — free, no key
   const ESPN_ENDPOINTS = [
     "https://site.web.api.espn.com/apis/site/v2/sports/golf/pga/leaderboard?event=401811941",
-    "https://site.web.api.espn.com/apis/site/v2/sports/golf/leaderboard?event=401811941",
     "https://site.api.espn.com/apis/site/v2/sports/golf/pga/leaderboard?event=401811941",
+    "https://site.web.api.espn.com/apis/site/v2/sports/golf/leaderboard?event=401811941",
     "https://site.web.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard",
   ];
 
@@ -53,80 +53,102 @@
     bg: "#080f08", surface: "#0f1a0f", border: "#1e3020",
     gold: "#b8973a", goldLight: "#d4af57", cream: "#f0ebe0", muted: "#5a7a5a",
   };
-  const SK = "masters-lb-2026";
+  const SK = "masters-scores-2026";
 
-  function posLabel(p) { return p == null ? "—" : `#${p}`; }
-  function posColor(p) {
-    if (p == null) return T.muted;
-    if (p <= 5)  return "#34d399";
-    if (p <= 15) return "#fbbf24";
-    if (p <= 30) return "#f97316";
+  // Score formatting
+  function scoreFmt(s) {
+    if (s == null) return "—";
+    if (s === 0) return "E";
+    return s > 0 ? `+${s}` : `${s}`;
+  }
+  function scoreColor(s) {
+    if (s == null) return T.muted;
+    if (s <= -5) return "#34d399";
+    if (s <= -1) return "#86efac";
+    if (s === 0) return "#fbbf24";
+    if (s <= 3)  return "#f97316";
     return "#f87171";
   }
+
   function ownerOf(g) { return GROUP.find(p => PICKS[p].includes(g)); }
-  function loadPos() { try { return JSON.parse(localStorage.getItem(SK) || "{}"); } catch { return {}; } }
-  function savePos(p) { try { localStorage.setItem(SK, JSON.stringify(p)); } catch {} }
+  function loadScores() { try { return JSON.parse(localStorage.getItem(SK) || "{}"); } catch { return {}; } }
+  function saveScores(s) { try { localStorage.setItem(SK, JSON.stringify(s)); } catch {} }
 
   function normName(s) {
     return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z\s]/g, "").trim();
   }
-
-  function matchGolfer(espnName) {
-    const en = normName(espnName);
-    // Exact match first
-    let match = ALL_GOLFERS.find(g => normName(g) === en);
-    if (match) return match;
-    // Last name match
-    const enLast = en.split(" ").pop();
-    match = ALL_GOLFERS.find(g => normName(g).split(" ").pop() === enLast);
-    return match || null;
+  function matchGolfer(name) {
+    const n = normName(name);
+    let m = ALL_GOLFERS.find(g => normName(g) === n);
+    if (m) return m;
+    const last = n.split(" ").pop();
+    return ALL_GOLFERS.find(g => normName(g).split(" ").pop() === last) || null;
   }
 
-  // Try to extract competitors from any ESPN JSON structure
-  function extractCompetitors(data) {
-    // Try leaderboard.competitors
-    if (data?.leaderboard?.competitors) return data.leaderboard.competitors;
-    // Try events[0].competitions[0].competitors
-    if (data?.events?.[0]?.competitions?.[0]?.competitors) return data.events[0].competitions[0].competitors;
-    // Try events[0].leaderboard
-    if (data?.events?.[0]?.leaderboard) return data.events[0].leaderboard;
-    // Flatten and search
-    const str = JSON.stringify(data);
-    console.log("ESPN data keys:", Object.keys(data));
-    console.log("ESPN sample:", str.slice(0, 500));
-    return [];
-  }
-
-  function getTeamResult(player, pos) {
+  function getTeamResult(player, scores) {
     const rows = PICKS[player]
-      .map(p => ({ name: p, pos: pos[p] ?? null }))
-      .sort((a, b) => a.pos == null ? 1 : b.pos == null ? -1 : a.pos - b.pos);
-    const counted = rows.filter(x => x.pos !== null).slice(0, 4);
-    const total = counted.length ? counted.reduce((s, x) => s + x.pos, 0) : null;
+      .map(p => ({ name: p, score: scores[p] ?? null }))
+      .sort((a, b) => {
+        if (a.score == null) return 1;
+        if (b.score == null) return -1;
+        return a.score - b.score;
+      });
+    const counted = rows.filter(x => x.score !== null).slice(0, 4);
+    const total = counted.length ? counted.reduce((s, x) => s + x.score, 0) : null;
     return { total, counted: counted.length, breakdown: rows };
   }
 
-  function getStandings(pos) {
-    return GROUP.map(p => ({ name: p, ...getTeamResult(p, pos) }))
+  function getStandings(scores) {
+    return GROUP.map(p => ({ name: p, ...getTeamResult(p, scores) }))
       .sort((a, b) => {
         if (a.total == null && b.total == null) return 0;
         if (a.total == null) return 1;
         if (b.total == null) return -1;
         if (a.total !== b.total) return a.total - b.total;
-        const ab = a.breakdown.filter(x => x.pos !== null).reduce((m, x) => Math.min(m, x.pos), 999);
-        const bb = b.breakdown.filter(x => x.pos !== null).reduce((m, x) => Math.min(m, x.pos), 999);
+        // Tiebreaker: best single score
+        const ab = a.breakdown.filter(x => x.score !== null).reduce((m, x) => Math.min(m, x.score), 999);
+        const bb = b.breakdown.filter(x => x.score !== null).reduce((m, x) => Math.min(m, x.score), 999);
         return ab - bb;
       });
   }
 
-  function getRanked(pos) {
+  function getRanked(scores) {
     return ALL_GOLFERS
-      .map(g => ({ name: g, pos: pos[g] ?? null, owner: ownerOf(g) }))
-      .sort((a, b) => a.pos == null ? 1 : b.pos == null ? -1 : a.pos - b.pos);
+      .map(g => ({ name: g, score: scores[g] ?? null, owner: ownerOf(g) }))
+      .sort((a, b) => {
+        if (a.score == null) return 1;
+        if (b.score == null) return -1;
+        return a.score - b.score;
+      });
+  }
+
+  // Parse ESPN score string like "-5", "+2", "E", "3" into number
+  function parseScore(s) {
+    if (s == null) return null;
+    const str = String(s).trim();
+    if (str === "E" || str === "0") return 0;
+    if (str === "--" || str === "" || str === "CUT" || str === "WD") return null;
+    const n = parseInt(str, 10);
+    return isNaN(n) ? null : n;
+  }
+
+  function extractPlayersFromESPN(data) {
+    // Try different ESPN structures
+    const candidates = [
+      data?.leaderboard?.competitors,
+      data?.events?.[0]?.competitions?.[0]?.competitors,
+      data?.events?.[0]?.leaderboard,
+    ].filter(Boolean);
+
+    for (const list of candidates) {
+      if (Array.isArray(list) && list.length > 0) return list;
+    }
+    console.log("ESPN data structure:", JSON.stringify(data).slice(0, 800));
+    return [];
   }
 
   function App() {
-    const [positions, setPositions] = useState(loadPos);
+    const [scores, setScores]       = useState(loadScores);
     const [inputs, setInputs]       = useState({});
     const [tab, setTab]             = useState("board");
     const [activePl, setActivePl]   = useState("Helge");
@@ -136,94 +158,95 @@
     const [lastUp, setLastUp]       = useState(null);
     const [expanded, setExpanded]   = useState(null);
 
-    function applyPos(g, val) {
-      const v = parseInt(val, 10);
-      if (!isNaN(v) && v > 0) {
-        const next = { ...positions, [g]: v };
-        setPositions(next); savePos(next);
+    function applyScore(g, val) {
+      const str = val.trim();
+      let v;
+      if (str === "E" || str === "e") v = 0;
+      else v = parseInt(str, 10);
+      if (!isNaN(v)) {
+        const next = { ...scores, [g]: v };
+        setScores(next); saveScores(next);
         setInputs(prev => { const n = { ...prev }; delete n[g]; return n; });
       }
     }
-    function clearPos(g) {
-      const next = { ...positions }; delete next[g];
-      setPositions(next); savePos(next);
+    function clearScore(g) {
+      const next = { ...scores }; delete next[g];
+      setScores(next); saveScores(next);
     }
     function saveAll() {
-      const next = { ...positions }; let changed = false;
+      const next = { ...scores }; let changed = false;
       for (const [g, val] of Object.entries(inputs)) {
-        const v = parseInt(val, 10);
-        if (!isNaN(v) && v > 0) { next[g] = v; changed = true; }
+        const str = String(val).trim();
+        let v = str === "E" || str === "e" ? 0 : parseInt(str, 10);
+        if (!isNaN(v)) { next[g] = v; changed = true; }
       }
-      if (changed) { setPositions(next); savePos(next); setInputs({}); }
+      if (changed) { setScores(next); saveScores(next); setInputs({}); }
     }
 
     async function handleFetch() {
-      setFetching(true); setFetchErr(""); setFetchMsg("Trying ESPN API...");
-      
+      setFetching(true); setFetchErr(""); setFetchMsg("Trying ESPN...");
       let data = null;
-      let worked = "";
 
       for (const url of ESPN_ENDPOINTS) {
         try {
-          setFetchMsg(`Trying ${url.split("?")[0].split("/").pop()}...`);
+          setFetchMsg(`Fetching scores...`);
           const res = await fetch(url);
-          if (!res.ok) { console.log(`${url} → ${res.status}`); continue; }
+          if (!res.ok) { console.log(url, res.status); continue; }
           data = await res.json();
-          worked = url;
+          console.log("✓ ESPN endpoint worked:", url);
           break;
-        } catch(e) {
-          console.log(`${url} failed:`, e.message);
-        }
+        } catch(e) { console.log(url, "failed:", e.message); }
       }
 
       if (!data) {
-        setFetchErr("All ESPN endpoints failed. Use Manual entry instead.");
-        setFetching(false);
-        return;
+        setFetchErr("ESPN unreachable. Use manual entry below.");
+        setFetching(false); return;
       }
 
-      setFetchMsg("Parsing players...");
-      const competitors = extractCompetitors(data);
+      setFetchMsg("Parsing scores...");
+      const players = extractPlayersFromESPN(data);
 
-      if (!competitors.length) {
-        setFetchErr("Got ESPN data but couldn't find player list. Check console.");
-        setFetching(false);
-        return;
+      if (!players.length) {
+        setFetchErr("Got ESPN data but no players found. Check console.");
+        setFetching(false); return;
       }
 
-      const next = { ...positions };
+      const next = { ...scores };
       let updated = 0;
 
-      competitors.forEach((c, idx) => {
-        // Try various ESPN field paths for name and position
-        const name = c.athlete?.displayName || c.athlete?.fullName || c.displayName || c.name || "";
-        const sortPos = c.sortOrder || idx + 1;
-        const posStr = c.status?.position?.id || c.status?.rank || c.linescores?.[0]?.rank || sortPos;
-        const pos = parseInt(posStr, 10);
-
+      players.forEach(c => {
+        const name = c.athlete?.displayName || c.athlete?.fullName || c.displayName || "";
         if (!name) return;
+
+        // Score to par — ESPN uses various field names
+        const rawScore =
+          c.statistics?.find(s => s.name === "scoreToPar")?.displayValue ||
+          c.score ||
+          c.status?.displayValue ||
+          c.linescores?.reduce((sum, r) => sum + (r.value || 0), 0);
+
+        const score = parseScore(rawScore);
         const matched = matchGolfer(name);
-        if (matched && !isNaN(pos) && pos > 0) {
-          next[matched] = pos;
+        if (matched && score !== null) {
+          next[matched] = score;
           updated++;
         }
       });
 
       if (updated === 0) {
-        setFetchErr("Matched 0 players. ESPN structure may have changed. Use Manual.");
-        setFetching(false);
-        return;
+        setFetchErr("Matched 0 scores. ESPN structure changed. Check console & use manual.");
+        setFetching(false); return;
       }
 
-      setPositions(next); savePos(next);
+      setScores(next); saveScores(next);
       setLastUp(new Date().toLocaleTimeString());
-      setFetchMsg(`✓ Updated ${updated}/${ALL_GOLFERS.length} players from ESPN`);
+      setFetchMsg(`✓ ${updated}/${ALL_GOLFERS.length} scores updated`);
       setFetching(false);
     }
 
-    const standings = getStandings(positions);
-    const ranked    = getRanked(positions);
-    const scored    = ALL_GOLFERS.filter(g => positions[g] != null).length;
+    const standings = getStandings(scores);
+    const ranked    = getRanked(scores);
+    const scored    = ALL_GOLFERS.filter(g => scores[g] != null).length;
 
     const Btn = () => (
       <div style={{ padding: "0 14px 14px" }}>
@@ -235,40 +258,44 @@
           letterSpacing: 2, textTransform: "uppercase",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8
         }}>
-          {fetching ? <><span className="spin">⟳</span> {fetchMsg}</> : "⛳ Refresh Live Positions"}
+          {fetching ? <><span className="spin">⟳</span> {fetchMsg}</> : "⛳ Refresh Live Scores"}
         </button>
         {fetchErr && <div style={{ color: "#f87171", fontSize: 11, textAlign: "center", marginTop: 6 }}>{fetchErr}</div>}
-        {lastUp && !fetching && <div style={{ color: T.muted, fontSize: 10, textAlign: "center", marginTop: 6 }}>UPDATED {lastUp} · via ESPN</div>}
+        {lastUp && !fetching && <div style={{ color: T.muted, fontSize: 10, textAlign: "center", marginTop: 6 }}>UPDATED {lastUp} · ESPN · {scored}/{ALL_GOLFERS.length} scored</div>}
       </div>
     );
 
     const Board = () => (
       <div style={{ padding: "14px 14px 0" }}>
         <Btn />
-        <div style={{ color: T.gold, fontSize: 10, letterSpacing: 4, textTransform: "uppercase", marginBottom: 10 }}>Standings</div>
+        <div style={{ color: T.gold, fontSize: 10, letterSpacing: 4, textTransform: "uppercase", marginBottom: 10 }}>Standings — Best 4 of 6</div>
         {standings.map((s, rank) => {
           const col = COLORS[s.name];
           const isOpen = expanded === s.name;
+          const leading = rank === 0 && s.total !== null;
           return (
-            <div key={s.name} style={{ background: col.bg, border: `1.5px solid ${rank===0&&s.total!==null?col.accent:col.dim}`, borderRadius: 12, marginBottom: 8, boxShadow: rank===0&&s.total!==null?`0 0 18px ${col.accent}33`:"none" }}>
+            <div key={s.name} style={{ background: col.bg, border: `1.5px solid ${leading?col.accent:col.dim}`, borderRadius: 12, marginBottom: 8, boxShadow: leading?`0 0 18px ${col.accent}33`:"none" }}>
               <div onClick={() => setExpanded(isOpen ? null : s.name)} style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
                 <span style={{ fontSize: 22 }}>{MEDALS[rank]}</span>
                 <span style={{ fontSize: 16 }}>{EMOJI[s.name]}</span>
                 <span style={{ color: col.accent, fontWeight: 700, fontSize: 17, flex: 1 }}>{s.name}</span>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ color: s.total!==null?col.accent:T.muted, fontWeight: 900, fontSize: 26, lineHeight: 1 }}>{s.total!==null?s.total:"—"}</div>
-                  <div style={{ color: T.muted, fontSize: 10 }}>{s.counted>0?`top ${s.counted} of 6`:"no scores"}</div>
+                  <div style={{ color: s.total!==null?scoreColor(s.total):T.muted, fontWeight: 900, fontSize: 28, lineHeight: 1 }}>
+                    {scoreFmt(s.total)}
+                  </div>
+                  <div style={{ color: T.muted, fontSize: 10 }}>{s.counted>0?`top ${s.counted} of 6`:"no scores yet"}</div>
                 </div>
                 <span style={{ color: T.muted, fontSize: 13 }}>{isOpen?"▲":"▼"}</span>
               </div>
+              {/* Mini chips */}
               <div style={{ borderTop: `1px solid ${col.dim}`, padding: "8px 16px", display: "flex", gap: 5, flexWrap: "wrap" }}>
                 {s.breakdown.map((b, j) => {
-                  const counting = b.pos !== null && j < 4;
+                  const counting = b.score !== null && j < 4;
                   return (
                     <div key={b.name} style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", background: counting?col.dim:T.bg, borderRadius: 20, opacity: counting?1:0.4, border: `1px solid ${counting?col.accent+"44":T.border}` }}>
                       <span style={{ color: counting?T.gold:T.muted, fontSize: 10 }}>{counting?"★":"○"}</span>
                       <span style={{ color: col.muted, fontSize: 10, whiteSpace: "nowrap" }}>{b.name.split(" ").pop()}</span>
-                      <span style={{ color: posColor(b.pos), fontSize: 10, fontWeight: 700 }}>{posLabel(b.pos)}</span>
+                      <span style={{ color: scoreColor(b.score), fontSize: 10, fontWeight: 700 }}>{scoreFmt(b.score)}</span>
                     </div>
                   );
                 })}
@@ -276,12 +303,12 @@
               {isOpen && (
                 <div style={{ borderTop: `1px solid ${col.dim}`, padding: "8px 16px 14px" }}>
                   {s.breakdown.map((b, j) => {
-                    const counting = b.pos !== null && j < 4;
+                    const counting = b.score !== null && j < 4;
                     return (
                       <div key={b.name} style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 0", opacity: counting?1:0.35 }}>
                         <span style={{ color: counting?T.gold:T.muted, fontSize: 12, width: 16 }}>{counting?"★":"○"}</span>
                         <span style={{ color: col.muted, fontSize: 13, flex: 1 }}>{b.name}</span>
-                        <span style={{ color: posColor(b.pos), fontWeight: 700, fontSize: 14, minWidth: 36, textAlign: "right" }}>{posLabel(b.pos)}</span>
+                        <span style={{ color: scoreColor(b.score), fontWeight: 700, fontSize: 15, minWidth: 40, textAlign: "right" }}>{scoreFmt(b.score)}</span>
                       </div>
                     );
                   })}
@@ -291,9 +318,10 @@
           );
         })}
 
+        {/* All golfers ranked by score */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "20px 0 14px" }}>
           <div style={{ flex: 1, height: 1, background: T.border }} />
-          <span style={{ color: T.gold, fontSize: 10, letterSpacing: 4, textTransform: "uppercase" }}>All Golfers Ranked</span>
+          <span style={{ color: T.gold, fontSize: 10, letterSpacing: 4, textTransform: "uppercase" }}>All Golfers</span>
           <div style={{ flex: 1, height: 1, background: T.border }} />
         </div>
 
@@ -302,14 +330,13 @@
             const col = COLORS[g.owner];
             return (
               <div key={g.name} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderBottom: i<ranked.length-1?`1px solid ${T.border}`:"none", background: i%2===0?"transparent":"#0a140a" }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: g.pos!=null?posColor(g.pos)+"22":T.border, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <span style={{ color: posColor(g.pos), fontWeight: 900, fontSize: 13 }}>{g.pos!=null?g.pos:"—"}</span>
-                </div>
+                <span style={{ color: T.muted, fontSize: 12, width: 20, textAlign: "right", flexShrink: 0 }}>{i+1}</span>
                 <span style={{ color: T.cream, fontSize: 13, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.name}</span>
                 <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", background: col.dim, borderRadius: 20, flexShrink: 0 }}>
                   <span style={{ fontSize: 10 }}>{EMOJI[g.owner]}</span>
                   <span style={{ color: col.accent, fontSize: 10, fontWeight: 700 }}>{g.owner}</span>
                 </div>
+                <span style={{ color: scoreColor(g.score), fontWeight: 700, fontSize: 15, minWidth: 38, textAlign: "right" }}>{scoreFmt(g.score)}</span>
               </div>
             );
           })}
@@ -320,6 +347,9 @@
     const Manual = () => (
       <div style={{ padding: "14px 14px 0" }}>
         <Btn />
+        <div style={{ color: T.muted, fontSize: 11, textAlign: "center", marginBottom: 14 }}>
+          Enter scores to par: -5, E, +2 etc
+        </div>
         <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
           {GROUP.map(p => (
             <button key={p} onClick={() => setActivePl(p)}
@@ -330,22 +360,23 @@
         <div style={{ color: COLORS[activePl].accent, fontWeight: 700, fontSize: 17, marginBottom: 12 }}>{EMOJI[activePl]} {activePl}'s Team</div>
         <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
           {PICKS[activePl].map((g, i) => {
-            const cur = inputs[g]!==undefined ? inputs[g] : (positions[g]??"");
+            const cur = inputs[g]!==undefined ? inputs[g] : (scores[g]!=null?scores[g]==="E"?"E":scores[g]:"");
             return (
               <div key={g} style={{ display: "flex", alignItems: "center", gap: 8, padding: "11px 14px", borderBottom: i<5?`1px solid ${T.border}`:"none" }}>
                 <span style={{ color: T.cream, fontSize: 13, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g}</span>
-                <span style={{ color: posColor(positions[g]), fontSize: 13, fontWeight: 700, minWidth: 30, textAlign: "right" }}>{posLabel(positions[g])}</span>
-                <input type="number" min="1" value={cur}
+                <span style={{ color: scoreColor(scores[g]), fontSize: 14, fontWeight: 700, minWidth: 34, textAlign: "right" }}>{scoreFmt(scores[g])}</span>
+                <input
+                  value={cur}
                   onChange={e => setInputs(prev => ({ ...prev, [g]: e.target.value }))}
-                  onKeyDown={e => e.key==="Enter" && applyPos(g, inputs[g])}
-                  placeholder="pos"
+                  onKeyDown={e => e.key==="Enter" && applyScore(g, String(inputs[g]||""))}
+                  placeholder="E"
                   style={{ width: 52, padding: "6px 8px", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 6, color: T.cream, fontSize: 13, textAlign: "center", fontFamily: "Georgia", outline: "none" }}
                 />
-                <button onClick={() => applyPos(g, inputs[g])}
+                <button onClick={() => applyScore(g, String(inputs[g]||""))}
                   style={{ padding: "6px 10px", background: T.gold, color: "#000", fontSize: 12, fontWeight: 700, border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "Georgia" }}
                 >✓</button>
-                {positions[g]!=null && (
-                  <button onClick={() => clearPos(g)}
+                {scores[g]!=null && (
+                  <button onClick={() => clearScore(g)}
                     style={{ padding: "6px 8px", background: "transparent", color: T.muted, fontSize: 12, border: `1px solid ${T.border}`, borderRadius: 6, cursor: "pointer" }}
                   >✕</button>
                 )}
@@ -353,20 +384,23 @@
             );
           })}
         </div>
+
+        {/* Quick all-player grid */}
         <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 14, marginBottom: 20 }}>
           <div style={{ color: T.gold, fontSize: 10, letterSpacing: 3, textTransform: "uppercase", marginBottom: 12 }}>Quick Update — All 24</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {ALL_GOLFERS.map(g => {
               const owner = ownerOf(g);
-              const cur = inputs[g]!==undefined ? inputs[g] : (positions[g]??"");
+              const cur = inputs[g]!==undefined ? inputs[g] : (scores[g]!=null?scores[g]:"");
               return (
                 <div key={g} style={{ display: "flex", alignItems: "center", gap: 5 }}>
                   <span style={{ fontSize: 10 }}>{EMOJI[owner]}</span>
                   <span style={{ color: T.muted, fontSize: 11, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.split(" ").pop()}</span>
-                  <input type="number" min="1" value={cur}
+                  <input
+                    value={cur}
                     onChange={e => setInputs(prev => ({ ...prev, [g]: e.target.value }))}
-                    placeholder="—"
-                    style={{ width: 46, padding: "5px 6px", background: T.bg, border: `1px solid ${positions[g]!=null?T.gold+"55":T.border}`, borderRadius: 6, color: T.cream, fontSize: 12, textAlign: "center", fontFamily: "Georgia", outline: "none" }}
+                    placeholder="E"
+                    style={{ width: 46, padding: "5px 6px", background: T.bg, border: `1px solid ${scores[g]!=null?T.gold+"55":T.border}`, borderRadius: 6, color: T.cream, fontSize: 12, textAlign: "center", fontFamily: "Georgia", outline: "none" }}
                   />
                 </div>
               );
@@ -381,9 +415,9 @@
       <div style={{ minHeight: "100vh", background: T.bg, paddingBottom: 72 }}>
         <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: "14px 18px" }}>
           <div style={{ color: T.gold, fontSize: 9, letterSpacing: 6, textTransform: "uppercase", marginBottom: 2 }}>Augusta National · 2026</div>
-          <div style={{ color: T.cream, fontSize: 22, fontWeight: 900 }}>Masters Leaderboard</div>
+          <div style={{ color: T.cream, fontSize: 22, fontWeight: 900 }}>Masters Draft</div>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-            <span style={{ color: T.muted, fontSize: 11 }}>Pick 6 · Best 4 positions · lowest wins</span>
+            <span style={{ color: T.muted, fontSize: 11 }}>Pick 6 · Best 4 cumulative score · lowest wins</span>
             <span style={{ color: T.gold, fontSize: 11 }}>{scored}/{ALL_GOLFERS.length} scored</span>
           </div>
         </div>
