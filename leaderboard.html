@@ -22,7 +22,13 @@
 <script type="text/babel">
   const { useState } = React;
 
-  const PROXY = "https://guitar-proxy.tight-meadow-3e46.workers.dev/";
+  // ESPN endpoints to try in order — free, no key needed
+  const ESPN_ENDPOINTS = [
+    "https://site.web.api.espn.com/apis/site/v2/sports/golf/pga/leaderboard?event=401811941",
+    "https://site.web.api.espn.com/apis/site/v2/sports/golf/leaderboard?event=401811941",
+    "https://site.api.espn.com/apis/site/v2/sports/golf/pga/leaderboard?event=401811941",
+    "https://site.web.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard",
+  ];
 
   const PICKS = {
     Helge:  ["Viktor Hovland", "Marco Penge", "Jon Rahm", "Justin Thomas", "Hideki Matsuyama", "J.J. Spaun"],
@@ -60,6 +66,36 @@
   function ownerOf(g) { return GROUP.find(p => PICKS[p].includes(g)); }
   function loadPos() { try { return JSON.parse(localStorage.getItem(SK) || "{}"); } catch { return {}; } }
   function savePos(p) { try { localStorage.setItem(SK, JSON.stringify(p)); } catch {} }
+
+  function normName(s) {
+    return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z\s]/g, "").trim();
+  }
+
+  function matchGolfer(espnName) {
+    const en = normName(espnName);
+    // Exact match first
+    let match = ALL_GOLFERS.find(g => normName(g) === en);
+    if (match) return match;
+    // Last name match
+    const enLast = en.split(" ").pop();
+    match = ALL_GOLFERS.find(g => normName(g).split(" ").pop() === enLast);
+    return match || null;
+  }
+
+  // Try to extract competitors from any ESPN JSON structure
+  function extractCompetitors(data) {
+    // Try leaderboard.competitors
+    if (data?.leaderboard?.competitors) return data.leaderboard.competitors;
+    // Try events[0].competitions[0].competitors
+    if (data?.events?.[0]?.competitions?.[0]?.competitors) return data.events[0].competitions[0].competitors;
+    // Try events[0].leaderboard
+    if (data?.events?.[0]?.leaderboard) return data.events[0].leaderboard;
+    // Flatten and search
+    const str = JSON.stringify(data);
+    console.log("ESPN data keys:", Object.keys(data));
+    console.log("ESPN sample:", str.slice(0, 500));
+    return [];
+  }
 
   function getTeamResult(player, pos) {
     const rows = PICKS[player]
@@ -122,45 +158,66 @@
     }
 
     async function handleFetch() {
-      setFetching(true); setFetchErr(""); setFetchMsg("Searching leaderboard...");
-      try {
-        const res = await fetch(PROXY, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 1024,
-            tools: [{ type: "web_search_20250305", name: "web_search" }],
-            messages: [{
-              role: "user",
-              content: `Search the 2026 Masters Tournament leaderboard RIGHT NOW. For each golfer below give their current leaderboard position as a whole number (1=leader, ties use same number e.g. T5=5). If not started/withdrawn/cut use null. Return ONLY raw JSON, no markdown, no explanation. Example: {"Scottie Scheffler":1,"Rory McIlroy":3}
-Golfers: ${ALL_GOLFERS.join(", ")}`
-            }]
-          })
-        });
+      setFetching(true); setFetchErr(""); setFetchMsg("Trying ESPN API...");
+      
+      let data = null;
+      let worked = "";
 
-        if (!res.ok) {
-          const e = await res.json().catch(() => ({}));
-          throw new Error(e.error?.message || `Error ${res.status}`);
+      for (const url of ESPN_ENDPOINTS) {
+        try {
+          setFetchMsg(`Trying ${url.split("?")[0].split("/").pop()}...`);
+          const res = await fetch(url);
+          if (!res.ok) { console.log(`${url} → ${res.status}`); continue; }
+          data = await res.json();
+          worked = url;
+          break;
+        } catch(e) {
+          console.log(`${url} failed:`, e.message);
         }
-
-        setFetchMsg("Parsing results...");
-        const data = await res.json();
-        const text = data.content?.find(b => b.type === "text")?.text || "";
-        const clean = text.replace(/```json|```/g, "").trim();
-        const parsed = JSON.parse(clean);
-        const valid = {};
-        for (const [k, v] of Object.entries(parsed)) {
-          if (typeof v === "number" && v > 0) valid[k] = Math.round(v);
-        }
-        const next = { ...positions, ...valid };
-        setPositions(next); savePos(next);
-        setLastUp(new Date().toLocaleTimeString());
-        setFetchMsg(`✓ Updated ${Object.keys(valid).length} positions`);
-      } catch(e) {
-        setFetchErr(e.message || "Failed to fetch");
-        setFetchMsg("");
       }
+
+      if (!data) {
+        setFetchErr("All ESPN endpoints failed. Use Manual entry instead.");
+        setFetching(false);
+        return;
+      }
+
+      setFetchMsg("Parsing players...");
+      const competitors = extractCompetitors(data);
+
+      if (!competitors.length) {
+        setFetchErr("Got ESPN data but couldn't find player list. Check console.");
+        setFetching(false);
+        return;
+      }
+
+      const next = { ...positions };
+      let updated = 0;
+
+      competitors.forEach((c, idx) => {
+        // Try various ESPN field paths for name and position
+        const name = c.athlete?.displayName || c.athlete?.fullName || c.displayName || c.name || "";
+        const sortPos = c.sortOrder || idx + 1;
+        const posStr = c.status?.position?.id || c.status?.rank || c.linescores?.[0]?.rank || sortPos;
+        const pos = parseInt(posStr, 10);
+
+        if (!name) return;
+        const matched = matchGolfer(name);
+        if (matched && !isNaN(pos) && pos > 0) {
+          next[matched] = pos;
+          updated++;
+        }
+      });
+
+      if (updated === 0) {
+        setFetchErr("Matched 0 players. ESPN structure may have changed. Use Manual.");
+        setFetching(false);
+        return;
+      }
+
+      setPositions(next); savePos(next);
+      setLastUp(new Date().toLocaleTimeString());
+      setFetchMsg(`✓ Updated ${updated}/${ALL_GOLFERS.length} players from ESPN`);
       setFetching(false);
     }
 
@@ -181,7 +238,7 @@ Golfers: ${ALL_GOLFERS.join(", ")}`
           {fetching ? <><span className="spin">⟳</span> {fetchMsg}</> : "⛳ Refresh Live Positions"}
         </button>
         {fetchErr && <div style={{ color: "#f87171", fontSize: 11, textAlign: "center", marginTop: 6 }}>{fetchErr}</div>}
-        {lastUp && !fetching && <div style={{ color: T.muted, fontSize: 10, textAlign: "center", marginTop: 6 }}>UPDATED {lastUp}</div>}
+        {lastUp && !fetching && <div style={{ color: T.muted, fontSize: 10, textAlign: "center", marginTop: 6 }}>UPDATED {lastUp} · via ESPN</div>}
       </div>
     );
 
