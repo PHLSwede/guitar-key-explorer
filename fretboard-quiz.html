@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fretboard Drill · Guitar Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F2ECDD;
+    --paper-line:#DCD2B8;
+    --ink:#1C1A16;
+    --ink-soft:#5A5347;
+    --red:#B23A2F;
+    --green:#3F6B4A;
+    --gold:#9C7B2E;
+    --white:#FBF8F1;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background-color:var(--cream);
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 27px, var(--paper-line) 28px),
+      repeating-linear-gradient(90deg, transparent, transparent 27px, rgba(220,210,184,0.35) 28px);
+    color:var(--ink);
+    font-family:'Space Mono', monospace;
+    min-height:100vh;
+    padding:24px 16px 60px;
+  }
+  .wrap{max-width:760px;margin:0 auto;}
+
+  header.top{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-bottom:3px solid var(--ink);
+    padding-bottom:10px;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  header.top a{
+    color:var(--ink-soft);
+    text-decoration:none;
+    font-size:12px;
+    letter-spacing:0.06em;
+    border:1px solid var(--ink-soft);
+    padding:4px 9px;
+    border-radius:2px;
+  }
+  header.top a:hover{background:var(--ink); color:var(--white); border-color:var(--ink);}
+  h1.title{
+    font-family:'Playfair Display', serif;
+    font-style:italic;
+    font-weight:700;
+    font-size:30px;
+    margin:0;
+    letter-spacing:0.01em;
+  }
+  h1.title .bar{color:var(--red); font-style:normal;}
+
+  .eyebrow{
+    font-family:'Bebas Neue', sans-serif;
+    letter-spacing:0.16em;
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 6px;
+  }
+
+  /* ---- Card ---- */
+  .card{
+    background:var(--white);
+    border:1px solid var(--ink);
+    box-shadow:5px 5px 0 rgba(28,26,22,0.12);
+    padding:22px 22px 26px;
+    margin-bottom:22px;
+  }
+
+  fieldset{border:none; padding:0; margin:0 0 20px;}
+  legend{
+    font-family:'Bebas Neue', sans-serif;
+    font-size:16px;
+    letter-spacing:0.1em;
+    margin-bottom:8px;
+    padding:0;
+  }
+  .row{display:flex; flex-wrap:wrap; gap:8px;}
+  .choice{
+    border:1.5px solid var(--ink);
+    background:var(--white);
+    padding:8px 13px;
+    font-family:'Space Mono', monospace;
+    font-size:13px;
+    cursor:pointer;
+    border-radius:2px;
+    user-select:none;
+    transition:transform .08s ease;
+  }
+  .choice.selected{background:var(--ink); color:var(--white);}
+  .choice:active{transform:scale(0.97);}
+  select{
+    font-family:'Space Mono', monospace;
+    font-size:13px;
+    padding:8px 10px;
+    border:1.5px solid var(--ink);
+    border-radius:2px;
+    background:var(--white);
+    color:var(--ink);
+  }
+  .sub-row{margin-top:10px; padding-left:2px;}
+  .hint{font-size:11.5px; color:var(--ink-soft); margin-top:6px;}
+  .strings-grid{display:flex; gap:6px; flex-wrap:wrap;}
+
+  button.primary{
+    font-family:'Bebas Neue', sans-serif;
+    font-size:20px;
+    letter-spacing:0.08em;
+    background:var(--red);
+    color:var(--white);
+    border:none;
+    padding:14px 26px;
+    cursor:pointer;
+    width:100%;
+    border-radius:2px;
+    box-shadow:3px 3px 0 rgba(28,26,22,0.25);
+  }
+  button.primary:active{transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(28,26,22,0.25);}
+  button.ghost{
+    font-family:'Space Mono', monospace;
+    font-size:13px;
+    background:transparent;
+    border:1.5px solid var(--ink);
+    color:var(--ink);
+    padding:9px 16px;
+    cursor:pointer;
+    border-radius:2px;
+  }
+
+  /* ---- Quiz screen ---- */
+  .quiz-header{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;}
+  .quiz-meta{font-size:12px; color:var(--ink-soft); line-height:1.5;}
+  .score-badge{
+    font-family:'Bebas Neue', sans-serif;
+    font-size:22px;
+    border:2.5px solid var(--red);
+    color:var(--red);
+    border-radius:50% / 48% 52% 46% 54%;
+    width:64px; height:64px;
+    display:flex; align-items:center; justify-content:center;
+    transform:rotate(-4deg);
+    flex-shrink:0;
+  }
+
+  .fretboard-wrap{
+    position:relative;
+    overflow-x:auto;
+    padding:6px 0 2px;
+  }
+  svg#fretboard{display:block; margin:0 auto;}
+
+  .prompt{
+    text-align:center;
+    font-family:'Bebas Neue', sans-serif;
+    font-size:22px;
+    letter-spacing:0.06em;
+    margin:18px 0 14px;
+  }
+
+  .answer-grid{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:8px;
+    max-width:420px;
+    margin:0 auto;
+  }
+  .answer-btn{
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    font-size:16px;
+    padding:14px 0;
+    border:1.5px solid var(--ink);
+    background:var(--white);
+    border-radius:2px;
+    cursor:pointer;
+  }
+  .answer-btn:active{transform:scale(0.96);}
+  .answer-btn.correct{background:var(--green); color:var(--white); border-color:var(--green);}
+  .answer-btn.wrong{background:var(--red); color:var(--white); border-color:var(--red);}
+
+  .free-answer{display:flex; gap:8px; max-width:340px; margin:0 auto; justify-content:center;}
+  .free-answer input{
+    font-family:'Space Mono', monospace;
+    font-size:18px;
+    text-align:center;
+    padding:10px 12px;
+    border:1.5px solid var(--ink);
+    border-radius:2px;
+    width:120px;
+    text-transform:none;
+  }
+  .free-answer button{
+    font-family:'Bebas Neue', sans-serif;
+    font-size:16px;
+    letter-spacing:0.06em;
+    background:var(--ink);
+    color:var(--white);
+    border:none;
+    padding:0 18px;
+    border-radius:2px;
+    cursor:pointer;
+  }
+
+  .stamp{
+    position:absolute;
+    top:38%;
+    left:50%;
+    transform:translate(-50%,-50%) rotate(-9deg);
+    font-family:'Bebas Neue', sans-serif;
+    font-size:34px;
+    letter-spacing:0.08em;
+    padding:8px 22px;
+    border:5px solid var(--green);
+    color:var(--green);
+    border-radius:8px;
+    opacity:0;
+    pointer-events:none;
+    background:rgba(251,248,241,0.85);
+  }
+  .stamp.wrong{border-color:var(--red); color:var(--red); transform:translate(-50%,-50%) rotate(7deg);}
+  .stamp.show{
+    animation:stampIn .32s ease-out forwards;
+  }
+  @keyframes stampIn{
+    0%{opacity:0; transform:translate(-50%,-50%) scale(1.6) rotate(-9deg);}
+    100%{opacity:1; transform:translate(-50%,-50%) scale(1) rotate(-9deg);}
+  }
+  .stamp.wrong.show{animation-name:stampInW;}
+  @keyframes stampInW{
+    0%{opacity:0; transform:translate(-50%,-50%) scale(1.6) rotate(7deg);}
+    100%{opacity:1; transform:translate(-50%,-50%) scale(1) rotate(7deg);}
+  }
+
+  .reveal{
+    text-align:center;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-top:10px;
+    min-height:16px;
+  }
+
+  .progress-line{
+    text-align:center;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    letter-spacing:0.05em;
+    margin-bottom:2px;
+  }
+
+  /* ---- Results ---- */
+  .result-score{
+    font-family:'Bebas Neue', sans-serif;
+    font-size:56px;
+    text-align:center;
+    color:var(--red);
+    margin:6px 0 2px;
+  }
+  .result-sub{text-align:center; font-size:13px; color:var(--ink-soft); margin-bottom:22px;}
+  .weak-list{list-style:none; padding:0; margin:0;}
+  .weak-list li{
+    display:flex; justify-content:space-between;
+    padding:8px 2px; border-bottom:1px solid var(--paper-line);
+    font-size:13px;
+  }
+  .weak-list li:last-child{border-bottom:none;}
+  .actions{display:flex; gap:10px; margin-top:20px;}
+  .actions button{flex:1;}
+
+  [hidden]{display:none !important;}
+
+  @media (max-width:480px){
+    h1.title{font-size:24px;}
+    .answer-grid{grid-template-columns:repeat(3,1fr);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1 class="title">Fretboard <span class="bar">Drill</span></h1>
+    <a href="/">← Guitar Explorer</a>
+  </header>
+
+  <!-- ============ SETUP SCREEN ============ -->
+  <section id="setup-screen" class="card">
+    <p class="eyebrow">Session Setup</p>
+
+    <fieldset>
+      <legend>Mode</legend>
+      <div class="row" id="mode-choices">
+        <div class="choice selected" data-val="free">Free (any note)</div>
+        <div class="choice" data-val="scale">Scale</div>
+      </div>
+      <div class="sub-row" id="scale-options" hidden>
+        <div class="row">
+          <select id="key-select"></select>
+          <select id="scale-select"></select>
+        </div>
+        <p class="hint">Only positions inside the chosen key/scale will be quizzed.</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Difficulty — fret range</legend>
+      <div class="row" id="range-choices">
+        <div class="choice selected" data-min="0" data-max="4">Beginner (0–4)</div>
+        <div class="choice" data-min="0" data-max="7">Intermediate (0–7)</div>
+        <div class="choice" data-min="0" data-max="12">Advanced (0–12)</div>
+        <div class="choice" data-min="0" data-max="15">Full neck (0–15)</div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Strings</legend>
+      <div class="strings-grid" id="string-choices">
+        <!-- filled by JS -->
+      </div>
+      <p class="hint">Tap to toggle. Defaults to all six.</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Answer type</legend>
+      <div class="row" id="answer-type-choices">
+        <div class="choice selected" data-val="auto">Auto (by difficulty)</div>
+        <div class="choice" data-val="mc">Multiple choice</div>
+        <div class="choice" data-val="free">Type the note</div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Session</legend>
+      <div class="row" id="session-type-choices">
+        <div class="choice selected" data-val="count">Fixed questions</div>
+        <div class="choice" data-val="timer">Timed</div>
+      </div>
+      <div class="sub-row" id="count-options">
+        <div class="row" id="count-choices">
+          <div class="choice selected" data-val="10">10</div>
+          <div class="choice" data-val="20">20</div>
+          <div class="choice" data-val="30">30</div>
+        </div>
+      </div>
+      <div class="sub-row" id="timer-options" hidden>
+        <div class="row" id="timer-choices">
+          <div class="choice selected" data-val="60">60s</div>
+          <div class="choice" data-val="120">120s</div>
+          <div class="choice" data-val="180">180s</div>
+        </div>
+      </div>
+    </fieldset>
+
+    <button class="primary" id="start-btn">Begin Session</button>
+  </section>
+
+  <!-- ============ QUIZ SCREEN ============ -->
+  <section id="quiz-screen" class="card" hidden>
+    <div class="quiz-header">
+      <div class="quiz-meta" id="quiz-meta"></div>
+      <div class="score-badge" id="score-badge">0/0</div>
+    </div>
+
+    <p class="progress-line" id="progress-line"></p>
+
+    <div class="fretboard-wrap">
+      <svg id="fretboard"></svg>
+      <div class="stamp" id="stamp">CORRECT</div>
+    </div>
+
+    <p class="prompt">Name this note</p>
+
+    <div id="mc-answer" class="answer-grid"></div>
+    <div id="free-answer" class="free-answer" hidden>
+      <input type="text" id="free-input" maxlength="3" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="e.g. F#">
+      <button id="free-submit">Enter</button>
+    </div>
+
+    <p class="reveal" id="reveal-line">&nbsp;</p>
+  </section>
+
+  <!-- ============ RESULTS SCREEN ============ -->
+  <section id="results-screen" class="card" hidden>
+    <p class="eyebrow">Session Complete</p>
+    <div class="result-score" id="result-score">0/0</div>
+    <p class="result-sub" id="result-sub"></p>
+
+    <p class="eyebrow" style="margin-top:20px;">Missed most</p>
+    <ul class="weak-list" id="weak-list"></ul>
+
+    <div class="actions">
+      <button class="ghost" id="retry-btn">Retry same settings</button>
+      <button class="primary" id="new-btn">New session</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var NOTES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  var NOTES_FLAT  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+
+  // top-to-bottom rendering order (high e string at top, like standard tab)
+  var STRINGS = [
+    {label:'e', open:4},
+    {label:'B', open:11},
+    {label:'G', open:7},
+    {label:'D', open:2},
+    {label:'A', open:9},
+    {label:'E', open:4}
+  ];
+
+  var SCALES = {
+    major:          {name:'Major',            iv:[0,2,4,5,7,9,11]},
+    naturalMinor:   {name:'Natural Minor',    iv:[0,2,3,5,7,8,10]},
+    majorPent:      {name:'Major Pentatonic', iv:[0,2,4,7,9]},
+    minorPent:      {name:'Minor Pentatonic', iv:[0,3,5,7,10]},
+    dorian:         {name:'Dorian',           iv:[0,2,3,5,7,9,10]},
+    mixolydian:     {name:'Mixolydian',       iv:[0,2,4,5,7,9,10]},
+    phrygian:       {name:'Phrygian',         iv:[0,1,3,5,7,8,10]},
+    harmonicMinor:  {name:'Harmonic Minor',   iv:[0,2,3,5,7,8,11]}
+  };
+
+  var FRET_MARKERS_SINGLE = [3,5,7,9,15,17,19,21];
+  var FRET_MARKER_DOUBLE = 12;
+
+  // ---------- state ----------
+  var settings = null;
+  var session = null; // {positions:[], idx, correct, total, misses:{}, timerId, timeLeft}
+
+  // ---------- helpers ----------
+  function noteAt(stringOpenIdx, fret){
+    return (stringOpenIdx + fret) % 12;
+  }
+  function normalizeAnswer(str){
+    return str.trim().toUpperCase().replace('♭','B').replace('♯','#');
+  }
+  function isCorrectAnswer(str, noteIdx){
+    var norm = normalizeAnswer(str);
+    var sharp = NOTES_SHARP[noteIdx].toUpperCase();
+    var flat  = NOTES_FLAT[noteIdx].toUpperCase();
+    return norm === sharp || norm === flat;
+  }
+  function displayName(noteIdx, preferFlats){
+    return preferFlats ? NOTES_FLAT[noteIdx] : NOTES_SHARP[noteIdx];
+  }
+
+  // key select uses sharps for simplicity
+  var KEY_ROOTS = NOTES_SHARP;
+
+  function populateSelects(){
+    var keySel = document.getElementById('key-select');
+    KEY_ROOTS.forEach(function(k, i){
+      var o = document.createElement('option');
+      o.value = i; o.textContent = k;
+      keySel.appendChild(o);
+    });
+    var scaleSel = document.getElementById('scale-select');
+    Object.keys(SCALES).forEach(function(key){
+      var o = document.createElement('option');
+      o.value = key; o.textContent = SCALES[key].name;
+      scaleSel.appendChild(o);
+    });
+  }
+
+  function populateStringChoices(){
+    var wrap = document.getElementById('string-choices');
+    STRINGS.forEach(function(s, i){
+      var el = document.createElement('div');
+      el.className = 'choice selected';
+      el.dataset.idx = i;
+      el.textContent = s.label + ' string';
+      wrap.appendChild(el);
+    });
+  }
+
+  // ---------- generic choice-group wiring ----------
+  function wireSingleSelect(containerId, onChange){
+    var el = document.getElementById(containerId);
+    el.addEventListener('click', function(e){
+      var target = e.target.closest('.choice');
+      if(!target) return;
+      Array.prototype.forEach.call(el.children, function(c){ c.classList.remove('selected'); });
+      target.classList.add('selected');
+      if(onChange) onChange(target);
+    });
+  }
+  function wireMultiSelect(containerId){
+    var el = document.getElementById(containerId);
+    el.addEventListener('click', function(e){
+      var target = e.target.closest('.choice');
+      if(!target) return;
+      target.classList.toggle('selected');
+    });
+  }
+  function getSelected(containerId){
+    return document.getElementById(containerId).querySelector('.selected');
+  }
+  function getSelectedAll(containerId){
+    return Array.prototype.slice.call(document.getElementById(containerId).querySelectorAll('.selected'));
+  }
+
+  function initSetupInteractions(){
+    wireSingleSelect('mode-choices', function(target){
+      document.getElementById('scale-options').hidden = (target.dataset.val !== 'scale');
+    });
+    wireSingleSelect('range-choices');
+    wireMultiSelect('string-choices');
+    wireSingleSelect('answer-type-choices');
+    wireSingleSelect('session-type-choices', function(target){
+      document.getElementById('count-options').hidden = (target.dataset.val !== 'count');
+      document.getElementById('timer-options').hidden = (target.dataset.val !== 'timer');
+    });
+    wireSingleSelect('count-choices');
+    wireSingleSelect('timer-choices');
+  }
+
+  // ---------- read settings ----------
+  function readSettings(){
+    var mode = getSelected('mode-choices').dataset.val;
+    var rangeEl = getSelected('range-choices');
+    var activeStrings = getSelectedAll('string-choices').map(function(c){ return parseInt(c.dataset.idx,10); });
+    if(activeStrings.length === 0){ activeStrings = [0,1,2,3,4,5]; }
+
+    var answerType = getSelected('answer-type-choices').dataset.val;
+    var sessionType = getSelected('session-type-choices').dataset.val;
+
+    var s = {
+      mode: mode,
+      keyIdx: parseInt(document.getElementById('key-select').value || 0, 10),
+      scaleType: document.getElementById('scale-select').value || 'major',
+      fretMin: parseInt(rangeEl.dataset.min, 10),
+      fretMax: parseInt(rangeEl.dataset.max, 10),
+      strings: activeStrings,
+      answerType: answerType,
+      sessionType: sessionType,
+      questionCount: parseInt((getSelected('count-choices')||{}).dataset ? getSelected('count-choices').dataset.val : 20, 10),
+      timerSeconds: parseInt((getSelected('timer-choices')||{}).dataset ? getSelected('timer-choices').dataset.val : 60, 10)
+    };
+    return s;
+  }
+
+  function effectiveAnswerType(s){
+    if(s.answerType !== 'auto') return s.answerType;
+    return (s.fretMax <= 7) ? 'mc' : 'free';
+  }
+
+  // ---------- build question pool ----------
+  function buildPositionPool(s){
+    var pool = [];
+    var scaleIvs = s.mode === 'scale' ? SCALES[s.scaleType].iv.map(function(iv){ return (iv + s.keyIdx) % 12; }) : null;
+    s.strings.forEach(function(stringIdx){
+      var open = STRINGS[stringIdx].open;
+      for(var fret = s.fretMin; fret <= s.fretMax; fret++){
+        var n = noteAt(open, fret);
+        if(scaleIvs && scaleIvs.indexOf(n) === -1) continue;
+        pool.push({stringIdx:stringIdx, fret:fret, note:n});
+      }
+    });
+    return pool;
+  }
+
+  function shuffledBag(pool){
+    var bag = pool.slice();
+    for(var i = bag.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i+1));
+      var tmp = bag[i]; bag[i] = bag[j]; bag[j] = tmp;
+    }
+    return bag;
+  }
+
+  // ---------- fretboard SVG ----------
+  var FRET_W = 56, STRING_GAP = 30, MARGIN_L = 34, MARGIN_R = 20, MARGIN_T = 16, MARGIN_B = 26;
+
+  function renderFretboard(s, targetPos){
+    var fretCount = s.fretMax - s.fretMin;
+    if(fretCount < 1) fretCount = 1;
+    var w = MARGIN_L + MARGIN_R + fretCount * FRET_W;
+    var h = MARGIN_T + MARGIN_B + STRING_GAP * 5;
+    var svg = document.getElementById('fretboard');
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    svg.setAttribute('width', Math.min(w, 680));
+    svg.setAttribute('height', h * (Math.min(w,680)/w));
+    svg.innerHTML = '';
+
+    function fretX(fret){ return MARGIN_L + (fret - s.fretMin) * FRET_W; }
+    function stringY(idx){ return MARGIN_T + idx * STRING_GAP; }
+
+    // fret markers (dots between strings, centered in cell)
+    for(var f = s.fretMin + 1; f <= s.fretMax; f++){
+      var cx = fretX(f) - FRET_W/2;
+      if(FRET_MARKER_DOUBLE === f){
+        addCircle(svg, cx, stringY(1) + (stringY(2)-stringY(1))/2, 3.4, 'rgba(28,26,22,0.14)');
+        addCircle(svg, cx, stringY(3) + (stringY(4)-stringY(3))/2, 3.4, 'rgba(28,26,22,0.14)');
+      } else if(FRET_MARKERS_SINGLE.indexOf(f) !== -1){
+        addCircle(svg, cx, stringY(2) + (stringY(3)-stringY(2))/2, 3.4, 'rgba(28,26,22,0.14)');
+      }
+    }
+
+    // strings (horizontal)
+    STRINGS.forEach(function(st, idx){
+      var y = stringY(idx);
+      addLine(svg, MARGIN_L - (s.fretMin===0?10:0), y, MARGIN_L + fretCount*FRET_W, y, '#1C1A16', 1.4);
+      var lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+      lbl.setAttribute('x', 10); lbl.setAttribute('y', y+4);
+      lbl.setAttribute('font-family', 'Space Mono, monospace');
+      lbl.setAttribute('font-size', '11'); lbl.setAttribute('fill', '#5A5347');
+      lbl.textContent = st.label;
+      svg.appendChild(lbl);
+    });
+
+    // frets (vertical lines)
+    for(var i = 0; i <= fretCount; i++){
+      var x = MARGIN_L + i * FRET_W;
+      var actualFret = s.fretMin + i;
+      var isNut = (actualFret === 0);
+      addLine(svg, x, stringY(0), x, stringY(5), '#1C1A16', isNut ? 4 : 1);
+      if(i > 0 || actualFret !== 0){
+        var num = document.createElementNS('http://www.w3.org/2000/svg','text');
+        num.setAttribute('x', x - FRET_W/2); num.setAttribute('y', stringY(5) + 18);
+        num.setAttribute('font-family', 'Space Mono, monospace');
+        num.setAttribute('font-size', '10'); num.setAttribute('fill', '#5A5347');
+        num.setAttribute('text-anchor','middle');
+        num.textContent = actualFret;
+        svg.appendChild(num);
+      }
+    }
+
+    // target marker (red stamped dot)
+    if(targetPos){
+      var ty = stringY(targetPos.stringIdx);
+      var tx = targetPos.fret === 0 ? MARGIN_L - 10 : fretX(targetPos.fret) - FRET_W/2;
+      addCircle(svg, tx, ty, 9, '#B23A2F', true);
+    }
+  }
+  function addLine(svg, x1,y1,x2,y2,color,width){
+    var l = document.createElementNS('http://www.w3.org/2000/svg','line');
+    l.setAttribute('x1',x1); l.setAttribute('y1',y1);
+    l.setAttribute('x2',x2); l.setAttribute('y2',y2);
+    l.setAttribute('stroke',color); l.setAttribute('stroke-width',width);
+    svg.appendChild(l);
+  }
+  function addCircle(svg, cx,cy,r,fill,stamped){
+    var c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',r);
+    c.setAttribute('fill', stamped ? 'none' : fill);
+    if(stamped){
+      c.setAttribute('stroke', fill);
+      c.setAttribute('stroke-width', 3);
+    }
+    svg.appendChild(c);
+  }
+
+  // ---------- quiz flow ----------
+  function startSession(){
+    settings = readSettings();
+    var pool = buildPositionPool(settings);
+    if(pool.length === 0){
+      alert('No fretboard positions match that combination (check your scale/key and string/fret selections).');
+      return;
+    }
+    session = {
+      pool: pool,
+      bag: shuffledBag(pool),
+      idx: 0,
+      correct: 0,
+      total: 0,
+      misses: {}, // key "stringIdx-fret" -> count
+      answerType: effectiveAnswerType(settings),
+      locked: false
+    };
+    if(settings.sessionType === 'timer'){
+      session.timeLeft = settings.timerSeconds;
+    }
+    document.getElementById('setup-screen').hidden = true;
+    document.getElementById('results-screen').hidden = true;
+    document.getElementById('quiz-screen').hidden = false;
+
+    document.getElementById('quiz-meta').textContent =
+      (settings.mode === 'scale' ? (KEY_ROOTS[settings.keyIdx] + ' ' + SCALES[settings.scaleType].name) : 'Free mode') +
+      ' · frets ' + settings.fretMin + '–' + settings.fretMax +
+      ' · ' + (session.answerType === 'mc' ? 'multiple choice' : 'type answer');
+
+    if(settings.sessionType === 'timer'){
+      startTimer();
+    }
+    nextQuestion();
+  }
+
+  function startTimer(){
+    updateTimerLabel();
+    session.timerId = setInterval(function(){
+      session.timeLeft--;
+      updateTimerLabel();
+      if(session.timeLeft <= 0){
+        clearInterval(session.timerId);
+        endSession();
+      }
+    }, 1000);
+  }
+  function updateTimerLabel(){
+    var mm = Math.floor(session.timeLeft/60), ss = session.timeLeft%60;
+    document.getElementById('progress-line').textContent =
+      'Time left: ' + mm + ':' + (ss<10?'0':'')+ss;
+  }
+
+  function nextQuestionKey(){
+    if(session.bag.length === 0){ session.bag = shuffledBag(session.pool); }
+    return session.bag.pop();
+  }
+
+  var currentTarget = null;
+
+  function nextQuestion(){
+    if(settings.sessionType === 'count' && session.total >= settings.questionCount){
+      endSession();
+      return;
+    }
+    session.locked = false;
+    currentTarget = nextQuestionKey();
+    renderFretboard(settings, currentTarget);
+    document.getElementById('stamp').classList.remove('show','wrong');
+    document.getElementById('reveal-line').innerHTML = '&nbsp;';
+    document.getElementById('score-badge').textContent = session.correct + '/' + session.total;
+
+    if(settings.sessionType === 'count'){
+      document.getElementById('progress-line').textContent =
+        'Question ' + (session.total+1) + ' of ' + settings.questionCount;
+    }
+
+    if(session.answerType === 'mc'){
+      document.getElementById('mc-answer').hidden = false;
+      document.getElementById('free-answer').hidden = true;
+      renderMCAnswers(currentTarget);
+    } else {
+      document.getElementById('mc-answer').hidden = true;
+      document.getElementById('free-answer').hidden = false;
+      var input = document.getElementById('free-input');
+      input.value = '';
+      input.focus();
+    }
+  }
+
+  function renderMCAnswers(target){
+    var wrap = document.getElementById('mc-answer');
+    wrap.innerHTML = '';
+    var correctIdx = target.note;
+    var options = [correctIdx];
+    while(options.length < 4){
+      var r = Math.floor(Math.random()*12);
+      if(options.indexOf(r) === -1) options.push(r);
+    }
+    // shuffle
+    for(var i = options.length-1; i>0; i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t = options[i]; options[i]=options[j]; options[j]=t;
+    }
+    options.forEach(function(noteIdx){
+      var btn = document.createElement('div');
+      btn.className = 'answer-btn';
+      btn.textContent = displayName(noteIdx, false);
+      btn.dataset.note = noteIdx;
+      btn.addEventListener('click', function(){
+        handleAnswer(String(noteIdx), target, btn);
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function handleAnswer(rawAnswer, target, btnEl){
+    if(session.locked) return;
+    session.locked = true;
+    session.total++;
+    var correct;
+    if(session.answerType === 'mc'){
+      correct = (parseInt(rawAnswer,10) === target.note);
+    } else {
+      correct = isCorrectAnswer(rawAnswer, target.note);
+    }
+
+    if(correct){
+      session.correct++;
+    } else {
+      var key = target.stringIdx + '-' + target.fret;
+      session.misses[key] = (session.misses[key]||0) + 1;
+    }
+
+    // visual feedback
+    var stamp = document.getElementById('stamp');
+    stamp.textContent = correct ? 'CORRECT' : 'MISS';
+    stamp.classList.toggle('wrong', !correct);
+    stamp.classList.add('show');
+
+    if(session.answerType === 'mc' && btnEl){
+      btnEl.classList.add(correct ? 'correct' : 'wrong');
+      if(!correct){
+        var siblings = document.querySelectorAll('#mc-answer .answer-btn');
+        siblings.forEach(function(b){
+          if(parseInt(b.dataset.note,10) === target.note) b.classList.add('correct');
+        });
+      }
+    }
+
+    document.getElementById('reveal-line').textContent =
+      correct ? '' : ('Correct answer: ' + displayName(target.note, false) + ' (' + STRINGS[target.stringIdx].label + ' string, fret ' + target.fret + ')');
+
+    document.getElementById('score-badge').textContent = session.correct + '/' + session.total;
+
+    setTimeout(function(){
+      if(settings.sessionType === 'timer' && session.timeLeft <= 0){ return; }
+      nextQuestion();
+    }, correct ? 650 : 1400);
+  }
+
+  function endSession(){
+    if(session.timerId) clearInterval(session.timerId);
+    document.getElementById('quiz-screen').hidden = true;
+    document.getElementById('results-screen').hidden = false;
+
+    document.getElementById('result-score').textContent = session.correct + '/' + session.total;
+    var pct = session.total ? Math.round(100*session.correct/session.total) : 0;
+    document.getElementById('result-sub').textContent = pct + '% accuracy';
+
+    var list = Object.keys(session.misses).map(function(key){
+      var parts = key.split('-');
+      var stringIdx = parseInt(parts[0],10), fret = parseInt(parts[1],10);
+      var open = STRINGS[stringIdx].open;
+      var noteIdx = noteAt(open, fret);
+      return {
+        label: STRINGS[stringIdx].label + ' string, fret ' + fret + ' (' + displayName(noteIdx,false) + ')',
+        count: session.misses[key]
+      };
+    }).sort(function(a,b){ return b.count - a.count; }).slice(0,8);
+
+    var ul = document.getElementById('weak-list');
+    ul.innerHTML = '';
+    if(list.length === 0){
+      var li = document.createElement('li');
+      li.textContent = 'No misses — clean sweep.';
+      ul.appendChild(li);
+    } else {
+      list.forEach(function(item){
+        var li = document.createElement('li');
+        var span1 = document.createElement('span'); span1.textContent = item.label;
+        var span2 = document.createElement('span'); span2.textContent = item.count + '×';
+        li.appendChild(span1); li.appendChild(span2);
+        ul.appendChild(li);
+      });
+    }
+  }
+
+  // ---------- wire up ----------
+  function init(){
+    populateSelects();
+    populateStringChoices();
+    initSetupInteractions();
+
+    document.getElementById('start-btn').addEventListener('click', startSession);
+    document.getElementById('retry-btn').addEventListener('click', function(){
+      document.getElementById('results-screen').hidden = true;
+      startSession();
+    });
+    document.getElementById('new-btn').addEventListener('click', function(){
+      document.getElementById('results-screen').hidden = true;
+      document.getElementById('setup-screen').hidden = false;
+    });
+
+    document.getElementById('free-submit').addEventListener('click', function(){
+      var val = document.getElementById('free-input').value;
+      if(!val || session.locked) return;
+      handleAnswer(val, currentTarget, null);
+    });
+    document.getElementById('free-input').addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){
+        var val = e.target.value;
+        if(!val || session.locked) return;
+        handleAnswer(val, currentTarget, null);
+      }
+    });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
