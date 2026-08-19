@@ -159,7 +159,7 @@
     overflow-x:auto;
     padding:6px 0 2px;
   }
-  svg#fretboard{display:block; margin:0 auto;}
+  svg#fretboard{display:block; margin:0 auto; max-width:100%;}
 
   .prompt{
     text-align:center;
@@ -185,6 +185,10 @@
     background:var(--white);
     border-radius:2px;
     cursor:pointer;
+    text-align:center;
+    display:flex;
+    align-items:center;
+    justify-content:center;
   }
   .answer-btn:active{transform:scale(0.96);}
   .answer-btn.correct{background:var(--green); color:var(--white); border-color:var(--green);}
@@ -282,7 +286,7 @@
 
   @media (max-width:480px){
     h1.title{font-size:24px;}
-    .answer-grid{grid-template-columns:repeat(3,1fr);}
+    .answer-grid{grid-template-columns:repeat(2,1fr); max-width:280px;}
   }
 </style>
 </head>
@@ -584,17 +588,35 @@
   }
 
   // ---------- fretboard SVG ----------
-  var FRET_W = 56, STRING_GAP = 30, MARGIN_L = 34, MARGIN_R = 20, MARGIN_T = 16, MARGIN_B = 26;
+  var STRING_GAP = 30, MARGIN_L = 34, MARGIN_R = 20, MARGIN_T = 16, MARGIN_B = 26;
+  var FRET_W_MAX = 56, FRET_W_MIN = 26;
+  var lastRenderArgs = null; // {s, targetPos} so we can redraw on resize
+
+  function getContainerWidth(){
+    var wrap = document.querySelector('.fretboard-wrap');
+    var w = wrap ? wrap.clientWidth : 680;
+    return Math.max(w - 4, 240);
+  }
 
   function renderFretboard(s, targetPos){
+    lastRenderArgs = {s:s, targetPos:targetPos};
+
     var fretCount = s.fretMax - s.fretMin;
     if(fretCount < 1) fretCount = 1;
+
+    var containerW = getContainerWidth();
+    var idealFretW = (containerW - MARGIN_L - MARGIN_R) / fretCount;
+    var FRET_W = Math.max(FRET_W_MIN, Math.min(FRET_W_MAX, idealFretW));
+    // If even the minimum fret width doesn't fit, we'll let it scroll horizontally
+    // and make sure the target position is scrolled into view (handled below).
+
     var w = MARGIN_L + MARGIN_R + fretCount * FRET_W;
     var h = MARGIN_T + MARGIN_B + STRING_GAP * 5;
     var svg = document.getElementById('fretboard');
     svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
-    svg.setAttribute('width', Math.min(w, 680));
-    svg.setAttribute('height', h * (Math.min(w,680)/w));
+    svg.setAttribute('width', w);
+    svg.setAttribute('height', h);
+    svg.style.width = w + 'px';
     svg.innerHTML = '';
 
     function fretX(fret){ return MARGIN_L + (fret - s.fretMin) * FRET_W; }
@@ -641,10 +663,21 @@
     }
 
     // target marker (red stamped dot)
+    var targetTx = null;
     if(targetPos){
       var ty = stringY(targetPos.stringIdx);
-      var tx = targetPos.fret === 0 ? MARGIN_L - 10 : fretX(targetPos.fret) - FRET_W/2;
-      addCircle(svg, tx, ty, 9, '#B23A2F', true);
+      targetTx = targetPos.fret === 0 ? MARGIN_L - 10 : fretX(targetPos.fret) - FRET_W/2;
+      addCircle(svg, targetTx, ty, 9, '#B23A2F', true);
+    }
+
+    // if the board is wider than its container (min fret width still doesn't fit),
+    // scroll horizontally so the target note is guaranteed visible
+    var wrap = document.querySelector('.fretboard-wrap');
+    if(wrap && targetTx !== null){
+      requestAnimationFrame(function(){
+        var desiredScroll = targetTx - wrap.clientWidth / 2;
+        wrap.scrollLeft = Math.max(0, desiredScroll);
+      });
     }
   }
   function addLine(svg, x1,y1,x2,y2,color,width){
@@ -862,6 +895,17 @@
       });
     }
   }
+
+  // ---------- resize handling ----------
+  var resizeTimer = null;
+  window.addEventListener('resize', function(){
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function(){
+      if(lastRenderArgs && !document.getElementById('quiz-screen').hidden){
+        renderFretboard(lastRenderArgs.s, lastRenderArgs.targetPos);
+      }
+    }, 150);
+  });
 
   // ---------- wire up ----------
   function init(){
